@@ -900,7 +900,7 @@ function remSupported(){return 'serviceWorker' in navigator&&'PushManager' in wi
 function remRefresh(){
  if(!remSupported()){ui.rem='unsupported';return Promise.resolve()}
  if(Notification.permission==='denied'){ui.rem='denied';return Promise.resolve()}
- return navigator.serviceWorker.ready.then(function(reg){return reg.pushManager.getSubscription()}).then(function(sub){ui.rem=sub&&Notification.permission==='granted'?'on':'off'}).catch(function(){ui.rem='off'})}
+ return navigator.serviceWorker.ready.then(function(reg){return reg.pushManager.getSubscription()}).then(function(sub){ui.rem=sub&&Notification.permission==='granted'?'on':'off';if(ui.rem==='on'&&!ui.offline&&getPass())rpc('save_push_sub',{p_passcode:getPass(),p_sub:sub.toJSON()}).catch(function(){})}).catch(function(){ui.rem='off'})}
 function remOn(){
  ui.remMsg='';
  if(isIOS()&&!standalone()){ui.remMsg='On iPhone, first tap Share, then Add to Home Screen, and open the app from there.';render();return}
