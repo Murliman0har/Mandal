@@ -99,6 +99,8 @@
 @keyframes moonglow3{from{box-shadow:0 0 5px 1px rgba(240,225,170,.35),0 0 11px 3px rgba(230,205,130,.18)}to{box-shadow:0 0 8px 2px rgba(240,225,170,.6),0 0 18px 6px rgba(230,205,130,.3)}}
 .ev.t-rest .body .btn{background:#1a1342;color:#e8d596;border:1px solid rgba(232,213,150,.6);font-weight:700}
 .ev.t-rest .body .btn:hover,.ev.t-rest .body .btn:active{background:#2a2060;color:#fff1bd}
+.kv dd:has(a[href*="google.com/maps"]){white-space:normal!important;overflow:visible!important;text-overflow:clip!important}
+.kv dd a[href*="google.com/maps"]{overflow-wrap:anywhere}
 </style></head><body>
 <title>કાર્યક્રમ</title><meta name="claude:viewport-fit-sides" content="cover"><style id="css">
 /* Layout: one narrow column, day-at-a-time program with a colour-block time rail on each event. */
@@ -576,7 +578,8 @@ function showTitle(e){var t=tr(e.title||'').trim();if(!t)return false;var n=func
 function evCard(e,isNow,isNext){
  var tl=timeLabel(e),kv=[];
  function add(k,v){if(v)kv.push(h('dt',{text:T(k)}),h('dd',{text:v}))}
- add('Place',tr(e.place));
+ if((e.type==='padramani'||e.type==='vastu')&&e.place&&String(e.place).trim())kv.push(h('dt',{text:T('Place')}),h('dd',{},h('a',{class:'tel',href:'https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(e.place),target:'_blank',rel:'noopener noreferrer'},'📍 '+tr(e.place))));
+ else add('Place',tr(e.place));
  if(e.type==='parayan'){add('Vakta',sName(e.vakta));add('Portion',e.portion)}
  if(e.type==='katha')add('Vakta',sName(e.vakta));
  
