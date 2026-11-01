@@ -589,6 +589,9 @@ function evCard(e,isNow,isNext){
  if(e.type==='padramani'||e.type==='vastu'){var pl=String(e.place||'').trim();
   if(pl){pin=h('a',{class:'mappin',href:'https://www.google.com/maps/dir/?api=1&destination='+encodeURIComponent(pl),target:'_blank',rel:'noopener noreferrer','aria-label':lang==='gu'?'દિશા':'Directions',title:lang==='gu'?'દિશા':'Directions'});
    pin.innerHTML='<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M12 2C7.6 2 4 5.5 4 9.8c0 5.6 6.4 11.4 7.3 12.2.4.3.9.3 1.4 0C13.6 21.2 20 15.4 20 9.8 20 5.5 16.4 2 12 2z" fill="#D93025"/><circle cx="12" cy="9.8" r="3.2" fill="#fff"/></svg>'}}
+ else if(e.type==='car'){var cf=String(e.from||'').trim(),ct=String(e.to||'').trim();
+  if(cf||ct){pin=h('a',{class:'mappin',href:'https://www.google.com/maps/dir/?api=1'+(cf&&ct?'&origin='+encodeURIComponent(cf):'')+'&destination='+encodeURIComponent(ct||cf),target:'_blank',rel:'noopener noreferrer','aria-label':lang==='gu'?'દિશા':'Directions',title:lang==='gu'?'દિશા':'Directions'});
+   pin.innerHTML='<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M12 2C7.6 2 4 5.5 4 9.8c0 5.6 6.4 11.4 7.3 12.2.4.3.9.3 1.4 0C13.6 21.2 20 15.4 20 9.8 20 5.5 16.4 2 12 2z" fill="#D93025"/><circle cx="12" cy="9.8" r="3.2" fill="#fff"/></svg>'}}
  else add('Location',tr(e.place));
  var phoneDigits=String(e.phone||'').replace(/[^+\d]/g,''),call=null;
  if(phoneDigits&&RIDE.indexOf(e.type)>-1&&e.type!=='pravachan'){call=h('a',{class:'callpin',href:'tel:'+phoneDigits,'aria-label':lang==='gu'?'કૉલ કરો':'Call driver',title:(lang==='gu'?'કૉલ કરો: ':'Call driver: ')+e.phone});
