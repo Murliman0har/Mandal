@@ -582,8 +582,8 @@ function evCard(e,isNow,isNext){
  var tl=timeLabel(e),kv=[];
  function add(k,v){if(v)kv.push(h('dt',{text:T(k)}),h('dd',{text:v}))}
  var pin=null;
- if(e.type==='padramani'||e.type==='vastu'){var mu=String(e.mapUrl||'').trim(),pl=String(e.place||'').trim(),okU=/^https?:\/\//i.test(mu);
-  if(okU||pl){pin=h('a',{class:'mappin',href:okU?mu:'https://www.google.com/maps/dir/?api=1&destination='+encodeURIComponent(pl),target:'_blank',rel:'noopener noreferrer','aria-label':lang==='gu'?'દિશા':'Directions',title:lang==='gu'?'દિશા':'Directions'});
+ if(e.type==='padramani'||e.type==='vastu'){var pl=String(e.place||'').trim();
+  if(pl){pin=h('a',{class:'mappin',href:'https://www.google.com/maps/dir/?api=1&destination='+encodeURIComponent(pl),target:'_blank',rel:'noopener noreferrer','aria-label':lang==='gu'?'દિશા':'Directions',title:lang==='gu'?'દિશા':'Directions'});
    pin.innerHTML='<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M12 2C7.6 2 4 5.5 4 9.8c0 5.6 6.4 11.4 7.3 12.2.4.3.9.3 1.4 0C13.6 21.2 20 15.4 20 9.8 20 5.5 16.4 2 12 2z" fill="#D93025"/><circle cx="12" cy="9.8" r="3.2" fill="#fff"/></svg>'}}
  else add('Place',tr(e.place));
  if(e.type==='parayan'){add('Vakta',sName(e.vakta));add('Portion',e.portion)}
@@ -1051,7 +1051,6 @@ function openForm(ev){
   grp('parayan',[field('session',T('Session'),sel([['',T('Not set')],['morning',T('Morning')],['evening',T('Evening')]],e.session)),field('vakta',T('Vakta leading'),sel(saintOpts,e.vakta)),field('shastra',T('Shastra'),inp('shastra','text',e.shastra)),field('portion',T('Part of the Shastra'),inp('portion','text',e.portion))]),
   grp('kat',[field('kvakta',T('Vakta'),sel(saintOpts,e.vakta))]),
   grp('yajman',[field('yajman',T('Yajman'),inp('yajman','text',e.yajman))]),
-  grp('map',[field('mapurl','Google Maps link (opens when Directions is tapped)',inp('mapurl','url',e.mapUrl))]),
   grp('shift',[h('div',{class:'two'},field('from',T('Shifting from'),inp('from','text',e.from)),field('to',T('Shifting to'),inp('to','text',e.to)))]),
   grp('ride',[h('div',{class:'two'},field('driver',T('Driver'),inp('driver','text',e.driver)),field('phone',T('Driver contact number'),inp('phone','tel',e.phone)))]),
   grp('flight',[field('flight',T('Flight number'),inp('flight','text',e.flight)),h('div',{class:'two'},field('from2',T('From'),inp('from2','text',e.from)),field('to2',T('To'),inp('to2','text',e.to)))]),
@@ -1060,7 +1059,7 @@ function openForm(ev){
   pics,
   h('div',{class:'row',style:'justify-content:space-between'},
    h('div',{class:'row'},h('button',{class:'btn pri',type:'submit'},T('Done')),h('button',{class:'btn',type:'button',onclick:function(){modal.remove()}},T('Cancel')))));
- function sync(){var t=typeSel.value;groups.parayan.hidden=t!=='parayan';groups.yajman.hidden=YAJ.indexOf(t)<0;groups.map.hidden=!(t==='padramani'||t==='vastu');groups.shift.hidden=t!=='car';groups.ride.hidden=RIDE.indexOf(t)<0||t==='pravachan';groups.flight.hidden=t!=='flight'}
+ function sync(){var t=typeSel.value;groups.parayan.hidden=t!=='parayan';groups.yajman.hidden=YAJ.indexOf(t)<0;groups.shift.hidden=t!=='car';groups.ride.hidden=RIDE.indexOf(t)<0||t==='pravachan';groups.flight.hidden=t!=='flight'}
  function wrap(el){return el.parentNode}
  function isSer(){return isNew&&typeSel.value==='parayan'&&pkindSel.value!=='one'}
  function sync2(){sync();var t=typeSel.value,ser=isSer();
@@ -1075,7 +1074,7 @@ function openForm(ev){
   e.start=F.start.value;e.end=F.end.value;e.place=F.place.value.trim();e.notes=F.notes.value.trim();
   e.saints=[].slice.call(checks.querySelectorAll('input')).filter(function(c){return c.checked}).map(function(c){return c.value});
   e.session=F.session.value;e.vakta=F.vakta.value;if(t==='katha')e.vakta=F.kvakta.value;e.shastra=F.shastra.value.trim();e.portion=F.portion.value.trim();
-  e.yajman=F.yajman.value.trim();e.mapUrl=(t==='padramani'||t==='vastu')?F.mapurl.value.trim():'';e.driver=F.driver.value.trim();e.phone=F.phone.value.trim();e.flight=F.flight.value.trim();
+  e.yajman=F.yajman.value.trim();e.driver=F.driver.value.trim();e.phone=F.phone.value.trim();e.flight=F.flight.value.trim();
   if(t==='car'){e.from=F.from.value.trim();e.to=F.to.value.trim();e.title=route(e);e.endDate=''}else if(t==='flight'){e.from=F.from2.value.trim();e.to=F.to2.value.trim()}
   if(!e.date){F.date.focus();return}
   if(t==='pravachan'){e.endDate='';e.dur=+F.dur.value||10;if(e.start){var sm=toMin(e.start),em=Math.min(sm+e.dur,1439);e.end=String(Math.floor(em/60)).padStart(2,'0')+':'+String(em%60).padStart(2,'0')}else e.end=''}
