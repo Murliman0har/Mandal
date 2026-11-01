@@ -1,5 +1,5 @@
 <!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><link rel="manifest" href="manifest.webmanifest"><meta name="color-scheme" content="only light"><meta name="theme-color" content="#a94712"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="કાર્યક્રમ"><meta name="apple-mobile-web-app-status-bar-style" content="default"><link rel="apple-touch-icon" href="apple-touch-icon.png"><link rel="icon" type="image/png" href="icon-192.png"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}
-.t-lunch .rail,.t-vastu .rail{color:#3f2414}
+.t-lunch .rail,.t-vastu .rail,.t-outing .rail{color:#3f2414}
 .ev.t-flight .body{position:relative;overflow:hidden;background:linear-gradient(180deg,#4fb0f2 0%,#8fd0fb 55%,#dff2ff 100%)}
 .ev.t-flight .body>*{position:relative;z-index:1}
 .ev.t-flight .body::before,.ev.t-flight .body::after{content:'';position:absolute;left:0;right:0;pointer-events:none;background-repeat:repeat-x;z-index:0}
@@ -63,7 +63,7 @@
 :root[data-theme=dark] .ev.t-flight .body{background:linear-gradient(180deg,#08162d 0%,#122b52 60%,#244570 100%)}
 :root[data-theme=dark] .ev.t-flight .body::before,:root[data-theme=dark] .ev.t-flight .body::after{opacity:.15}
 .rtag{font-size:12px;font-weight:700;line-height:1.3;padding:2px 9px;border-radius:999px;background:rgba(255,255,255,.22);border:1px solid rgba(255,255,255,.5);color:#fff;white-space:nowrap;align-self:center}
-.t-lunch .rtag,.t-vastu .rtag{background:rgba(255,255,255,.4);color:#3f2414;border-color:rgba(63,36,20,.3)}
+.t-lunch .rtag,.t-vastu .rtag,.t-outing .rtag{background:rgba(255,255,255,.4);color:#3f2414;border-color:rgba(63,36,20,.3)}
 .ev.t-rest .rtag{background:rgba(255,215,106,.12);color:#e8d596;border-color:rgba(255,215,106,.4)}
 .ev .rail .mtag+.pill.now,.ev .rail .rtag+.pill.now{margin-left:auto}
 .ev .rail .rtag{margin-left:2px}
@@ -497,8 +497,8 @@ body{
 .ev .rail .pill.now{margin-left:auto;background:#fff;color:color-mix(in srgb,var(--c) 65%,#000);animation:none;box-shadow:0 0 8px rgba(255,255,255,.8);align-self:center;padding:2px 10px}
 .ev .rail .mtag{position:static!important;margin-left:auto;align-self:center}
 .ev .rail .mtag+.pill.now{margin-left:6px}
-:root{--c-lunch:#F2C512;--c-rest:#0A0A0F}
-.t-lunch{--c:var(--c-lunch)}.t-rest{--c:var(--c-rest)}
+:root{--c-outing:#86D391;--c-lunch:#F2C512;--c-rest:#0A0A0F}
+.t-lunch{--c:var(--c-lunch)}.t-outing{--c:var(--c-outing)}.t-rest{--c:var(--c-rest)}
 </style><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;600;700&family=Figtree:wght@400;500;600;700&family=Noto+Sans+Gujarati:wght@400;600;700&display=swap"><div id="root"></div><script id="seed" type="application/json">{"tripStart":"2026-12-22","tripEnd":"2027-06-19","stays":[],"events":[],"saints":[]}</script><script id="app">
 (function(){
 var TITLE_META='<title>કાર્યક્રમ</title><meta name="claude:viewport-fit-sides" content="cover">';
@@ -506,8 +506,8 @@ var FONT_LINK='<link rel="stylesheet" href="https://fonts.googleapis.com/css2?fa
 var SKEL_A='<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>\n';
 var SKEL_B='</body></html>';
 var state=JSON.parse(document.getElementById('seed').textContent);
-var TYPES={parayan:'Parayan',katha:'Katha',pothiyatra:'Aarti Niyam',padramani:'Padramani',vastu:'Vastu',sabha:'Utsav',pravachan:'Pravachan',lunch:'Lunch',rest:'Rest',flight:'Flight',car:'Mandir shift',other:'Other'};
-var RIDE=['car','padramani','vastu','flight','pravachan'];
+var TYPES={parayan:'Parayan',katha:'Katha',pothiyatra:'Aarti Niyam',padramani:'Padramani',vastu:'Vastu',sabha:'Utsav',pravachan:'Pravachan',lunch:'Lunch',rest:'Rest',outing:'Outing',flight:'Flight',car:'Mandir shift',other:'Other'};
+var RIDE=['car','padramani','vastu','outing','flight','pravachan'];
 var YAJ=['parayan','vastu','padramani'];
 var CARS={c1:'Car 1',c2:'Car 2'};
 var ui={sumOpen:'',assets:null,view:'day',date:null,filter:'',sel:[],canEdit:false,dirty:0,saving:false,msg:''};
@@ -518,7 +518,7 @@ var GN={g:'જ્ઞાનપ્રકાશ દાસ',hs:'હરિસેવ�
 var GS={g:'જ્ઞાનપ્રકાશ',hs:'હરિસેવક',mm:'મુરલીમનોહર',hp:'હરિપ્રસાદ',np:'નિત્યપ્રકાશ',ap:'આનંદપ્રકાશ',avd:'આનંદવલ્લભ',dj:'દેવજીવન'};
 (function(){var n={x_devprakash:['દેવપ્રકાશ'],x_axarvallabh:['અક્ષરવલ્લભ'],x_prabhuswarup:['પ્રભુસ્વરૂપ'],x_narayanvallabh:['નારાયણવલ્લભ'],x_nandkishor:['નંદકિશોર'],x_ghansyamkeshave:['ઘનશ્યામકેશવ'],x_dharmacharan:['ધર્મચરણ'],x_divyaprakash:['દિવ્યપ્રકાશ'],x_nilkanthmuni:['નીલકંઠમુનિ'],x_ghansyamprakash:['ઘનશ્યામપ્રકાશ'],x_krushnaprakash:['કૃષ્ણપ્રકાશ'],x_harikrushna:['હરિકૃષ્ણ'],x_ghansyam:['ઘનશ્યામ'],x_nautamprakash:['નૌતમપ્રકાશ'],x_bhaktiprasad:['ભક્તિપ્રસાદ']};
  for(var k in n){GS[k]=n[k][0];GN[k]=n[k][0]+' દાસજી'}})();
-var TG={parayan:'પારાયણ',katha:'કથા',patotsav:'પાટોત્સવ',pothiyatra:'આરતી નિયમ',padramani:'પધરામણી',vastu:'વાસ્તુ',sabha:'ઉત્સવ',pravachan:'પ્રવચન',lunch:'ભોજન',rest:'આરામ',flight:'ફ્લાઇટ',car:'મંદિર સ્થળાંતર',other:'અન્ય'};
+var TG={parayan:'પારાયણ',katha:'કથા',patotsav:'પાટોત્સવ',pothiyatra:'આરતી નિયમ',padramani:'પધરામણી',vastu:'વાસ્તુ',sabha:'ઉત્સવ',pravachan:'પ્રવચન',lunch:'ભોજન',outing:'આઉટિંગ',rest:'આરામ',flight:'ફ્લાઇટ',car:'મંદિર સ્થળાંતર',other:'અન્ય'};
 var CG={c1:'કાર 1',c2:'કાર 2'};
 var PL={'Harrow Mandir':'હેરો મંદિર','Wilsden Mandir':'વિલ્સડન મંદિર','Stanmore Mandir':'સ્ટેનમોર મંદિર','Woolwich Mandir':'વૂલવિચ મંદિર','East London Mandir':'ઈસ્ટ લંડન મંદિર','Cardiff Mandir':'કાર્ડિફ મંદિર','Bolton Mandir':'બોલ્ટન મંદિર','Oldham Mandir':'ઓલ્ડહામ મંદિર','ISSO Mandir':'ISSO મંદિર','Mariestad Temple':'મારિયેસ્ટાદ મંદિર','Jönköping Temple':'યોન્શોપિંગ મંદિર','Harrow':'હેરો','Wilsden':'વિલ્સડન','Stanmore':'સ્ટેનમોર','Woolwich':'વૂલવિચ','East London':'ઈસ્ટ લંડન','Cardiff':'કાર્ડિફ','Bolton':'બોલ્ટન','Oldham':'ઓલ્ડહામ','ISSO':'ISSO','Heathrow':'હીથ્રો','London Heathrow':'લંડન હીથ્રો','London':'લંડન','India':'ભારત','Gambia':'ગામ્બિયા','Senegal':'સેનેગલ','Sweden':'સ્વીડન','Dubai':'દુબઈ','London, UK':'લંડન, યુકે','Bradford, UK':'બ્રેડફોર્ડ, યુકે','Wales, UK':'વેલ્સ, યુકે','UK':'યુકે','UAE':'યુએઈ','Departure from India':'ભારતથી પ્રસ્થાન','Parayan':'પારાયણ','Patotsav':'પાટોત્સવ','Katha':'કથા','Pothiyatra':'પોથીયાત્રા','Depart India for London':'ભારતથી લંડન પ્રસ્થાન','Trip ends: return from Dubai':'યાત્રા પૂર્ણ: દુબઈથી પરત','Add ticket details':'ટિકિટની વિગતો ઉમેરવી'};
 function T(k){return lang==='gu'&&GU[k]!=null?GU[k]:k}
@@ -586,7 +586,7 @@ function evCard(e,isNow,isNext){
  var tl=timeLabel(e),kv=[];
  function add(k,v){if(v)kv.push(h('dt',{text:T(k)}),h('dd',{text:v}))}
  var pin=null;
- if(e.type==='padramani'||e.type==='vastu'||e.type==='car'){var pl=String(e.place||'').trim();
+ if(e.type==='padramani'||e.type==='vastu'||e.type==='car'||e.type==='outing'){var pl=String(e.place||'').trim();
   if(pl){pin=h('a',{class:'mappin',href:'https://www.google.com/maps/dir/?api=1&destination='+encodeURIComponent(pl),target:'_blank',rel:'noopener noreferrer','aria-label':lang==='gu'?'દિશા':'Directions',title:lang==='gu'?'દિશા':'Directions'});
    pin.innerHTML='<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M12 2C7.6 2 4 5.5 4 9.8c0 5.6 6.4 11.4 7.3 12.2.4.3.9.3 1.4 0C13.6 21.2 20 15.4 20 9.8 20 5.5 16.4 2 12 2z" fill="#D93025"/><circle cx="12" cy="9.8" r="3.2" fill="#fff"/></svg>'}}
  else add('Location',tr(e.place));
@@ -711,7 +711,7 @@ function planDetail(t){
    kl.map(function(sa){return h('div',{style:gr},h('span',{text:nm(sa.id)}),h('span',{style:'white-space:pre-wrap',text:kr[sa.id]||'\u2014'}))})))}
  t.stays.forEach(function(s){
   var n=diff(s.start,s.end)+1,seen={},tags=[];
-  state.events.forEach(function(e){if(['parayan','katha','pothiyatra','padramani','vastu','sabha','pravachan'].indexOf(e.type)>-1&&e.date<=s.end&&(e.endDate||e.date)>=s.start&&(nrm(e.place)===nrm(s.place)||(!state.stays.some(function(x){return nrm(x.place)===nrm(e.place)})&&(stayFor(e.date)||{}).id===s.id))){var dd=e.date<s.start?s.start:e.date;if(!seen[e.type]||dd<seen[e.type])seen[e.type]=dd}});
+  state.events.forEach(function(e){if(['parayan','katha','pothiyatra','padramani','vastu','outing','sabha','pravachan'].indexOf(e.type)>-1&&e.date<=s.end&&(e.endDate||e.date)>=s.start&&(nrm(e.place)===nrm(s.place)||(!state.stays.some(function(x){return nrm(x.place)===nrm(e.place)})&&(stayFor(e.date)||{}).id===s.id))){var dd=e.date<s.start?s.start:e.date;if(!seen[e.type]||dd<seen[e.type])seen[e.type]=dd}});
   Object.keys(seen).forEach(function(ty){tags.push(h('span',{class:'tag t-'+ty,role:'link',tabindex:'0',style:'cursor:pointer',text:typeLabel(ty),onclick:function(ev){ev.stopPropagation();ev.preventDefault();ui.date=seen[ty];ui.view='day';render();window.scrollTo(0,0);setTimeout(function(){var c=document.querySelector('.ev.t-'+ty);if(c)c.scrollIntoView({behavior:'smooth',block:'center'})},150)}}))});
   root.append(h('div',{style:'display:flex;flex-direction:column;gap:4px'},
    h('button',{class:'stay'+(cur&&cur.id===s.id?' cur':''),type:'button',onclick:function(){ui.date=s.start;ui.view='day';render();window.scrollTo(0,0)}},
@@ -783,7 +783,7 @@ function openStay(t,s){
   h('div',{class:'row'},h('button',{class:'btn pri',type:'submit'},T('Done')),h('button',{class:'btn',type:'button',onclick:function(){modal.remove()}},T('Cancel'))));
  modal.append(form);document.body.append(modal);backable(modal);F.place.focus()}
 
-var SUMORDER=['parayan','katha','padramani','vastu','sabha','pravachan','flight','car','other'];
+var SUMORDER=['parayan','katha','padramani','vastu','sabha','pravachan','outing','flight','car','other'];
 function rangeLabel(e){return e.endDate&&e.endDate!==e.date?fmt(e.date)+' – '+fmt(e.endDate):fmt(e.date)}
 function goDay(d){ui.date=d;ui.view='day';render();window.scrollTo(0,0)}
 function inYatra(e){return e.date>=state.tripStart&&e.date<=state.tripEnd}
