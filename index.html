@@ -598,7 +598,7 @@ function evCard(e,isNow,isNext){
  if(e.type==='katha')add('Vakta',sName(e.vakta));
  
  if(RIDE.indexOf(e.type)>-1){add('Driver',e.driver);
-   if(e.phone)kv.push(h('dt',{text:T('Contact')}),h('dd',{},h('a',{class:'tel',href:'tel:'+String(e.phone).replace(/[^+\d]/g,'')},'📞 '+e.phone)))}
+   }
  if(e.type==='flight'){add('Flight',e.flight)}
  if(YAJ.indexOf(e.type)>-1)add('Yajman',e.yajman);
  if(e.notes)kv.push(h('dt',{text:T('Notes')}),h('dd',{class:'wrapok',text:tr(e.notes)}));
