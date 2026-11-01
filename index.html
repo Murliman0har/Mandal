@@ -1199,6 +1199,16 @@ if(getPass())enter(getPass());else render();
 function speak(t){try{if(!('speechSynthesis' in window))return;var u=new SpeechSynthesisUtterance(t);u.lang='gu-IN';var vs=speechSynthesis.getVoices(),v=null;for(var i=0;i<vs.length;i++){if(/^gu/i.test(vs[i].lang)){v=vs[i];break}}if(v)u.voice=v;u.rate=.9;speechSynthesis.cancel();speechSynthesis.speak(u)}catch(x){}}
 if('serviceWorker' in navigator){navigator.serviceWorker.addEventListener('message',function(ev){var d=ev.data;if(d&&d.type==='speak'&&d.text)speak(d.text)})}
 if('serviceWorker' in navigator&&/^https?:/.test(location.protocol)){window.addEventListener('load',function(){navigator.serviceWorker.register('sw.js').catch(function(){})})}
+(function(){var sx=0,sy=0,st=0,ok=false;
+ function blocked(t){while(t&&t.nodeType===1){var n=t.tagName;if(n==='INPUT'||n==='TEXTAREA'||n==='SELECT'||t.classList.contains('modal')||t.classList.contains('drawer'))return true;if(t.scrollWidth>t.clientWidth+4){var o=getComputedStyle(t).overflowX;if(o==='auto'||o==='scroll')return true}t=t.parentNode}return false}
+ document.addEventListener('touchstart',function(e){ok=false;if(e.touches.length!==1||!ui.authed||ui.view!=='day'||document.querySelector('.modal,.drawer')||blocked(e.target))return;var t=e.touches[0];sx=t.clientX;sy=t.clientY;st=Date.now();ok=true},{passive:true});
+ document.addEventListener('touchend',function(e){if(!ok)return;ok=false;var t=e.changedTouches[0],dx=t.clientX-sx,dy=t.clientY-sy;
+  if(Math.abs(dx)<60||Math.abs(dx)<Math.abs(dy)*1.6||Date.now()-st>700)return;
+  var next=dx<0,nd=calClamp(addDays(ui.date,next?1:-1));if(nd===ui.date)return;
+  ui.date=nd;render();window.scrollTo(0,0);
+  try{if(!(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches)){var el=document.querySelector('.wrap-in');if(el&&el.animate)el.animate([{transform:'translateX('+(next?36:-36)+'px)',opacity:.35},{transform:'none',opacity:1}],{duration:220,easing:'ease-out'})}}catch(x){}
+ },{passive:true});
+})();
 setInterval(function(){if(ui.authed&&ui.view==='day'&&ui.date===today()&&!document.querySelector('.modal'))render()},60000);
 })();
 </script></body></html>
