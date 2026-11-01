@@ -783,13 +783,13 @@ function openStay(t,s){
   h('div',{class:'row'},h('button',{class:'btn pri',type:'submit'},T('Done')),h('button',{class:'btn',type:'button',onclick:function(){modal.remove()}},T('Cancel'))));
  modal.append(form);document.body.append(modal);backable(modal);F.place.focus()}
 
-var SUMORDER=['parayan','katha','pothiyatra','padramani','vastu','sabha','pravachan','flight','car','other'];
+var SUMORDER=['parayan','katha','padramani','vastu','sabha','pravachan','flight','car','other'];
 function rangeLabel(e){return e.endDate&&e.endDate!==e.date?fmt(e.date)+' – '+fmt(e.endDate):fmt(e.date)}
 function goDay(d){ui.date=d;ui.view='day';render();window.scrollTo(0,0)}
 function inYatra(e){return e.date>=state.tripStart&&e.date<=state.tripEnd}
 function sumView(){
  var root=h('div',{style:'display:flex;flex-direction:column;gap:14px'}),by={};
- var scope=ui.sumScope||'yatra',isY=scope==='yatra',evs=state.events.filter(function(e){return e.type!=='rest'&&e.type!=='lunch'&&inYatra(e)===isY&&hasSel(e)});
+ var scope=ui.sumScope||'yatra',isY=scope==='yatra',evs=state.events.filter(function(e){return e.type!=='rest'&&e.type!=='lunch'&&e.type!=='pothiyatra'&&inYatra(e)===isY&&hasSel(e)});
  root.append(h('div',{class:'chips',role:'group','aria-label':'Summary of'},
   [['yatra',T('London Yatra')],['other',T('Other days')]].map(function(x){return h('button',{class:'chip',type:'button','aria-pressed':scope===x[0]?'true':'false',style:'padding:6px 14px',onclick:function(){ui.sumScope=x[0];ui.sumOpen='';render()}},x[1])})));
  if(isY)root.append(h('p',{class:'note',style:'margin:0',text:fmt(state.tripStart,{day:'numeric',month:'short',year:'numeric'})+' – '+fmt(state.tripEnd,{day:'numeric',month:'short',year:'numeric'})}));
