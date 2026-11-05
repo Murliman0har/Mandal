@@ -148,6 +148,7 @@ button{cursor:pointer}
 .av{width:24px;height:24px;border-radius:50%;display:inline-grid;place-items:center;color:#fff;font-size:10px;font-weight:700;letter-spacing:.02em;flex:none}
 .av.g{background:var(--s-g)}.av.hs{background:var(--s-hs)}.av.mm{background:var(--s-mm)}.av.hp{background:var(--s-hp)}.av.np{background:var(--s-np)}.av.ap{background:var(--s-ap)}
 .av.all{background:var(--fg);color:var(--bg)}
+.av.ph{position:relative;overflow:hidden}
 .ev{display:grid;grid-template-columns:92px minmax(0,1fr);background:var(--surface);border:1px solid var(--line);border-radius:14px;overflow:hidden}
 .ev.now{border-color:var(--c);box-shadow:0 0 0 2px var(--c)}
 @keyframes nowpulse{0%{box-shadow:0 0 0 2px var(--c),0 0 0 2px color-mix(in srgb,var(--c) 55%,transparent)}70%{box-shadow:0 0 0 2px var(--c),0 0 0 12px color-mix(in srgb,var(--c) 0%,transparent)}100%{box-shadow:0 0 0 2px var(--c),0 0 0 2px color-mix(in srgb,var(--c) 0%,transparent)}}
@@ -547,7 +548,10 @@ function short(s){if(lang==='gu'&&GS[s.id])return GS[s.id];return s.name.replace
 function sName(id){var s=state.saints.find(function(x){return x.id===id});return s?(lang==='gu'&&GN[id]?GN[id]:s.name):''}
 var GCOL=['#7a4fa3','#2f7d6b','#b0603a','#3a6ea5','#8a7a1e','#a23b72','#4c8c2b','#c05a5a','#4b5d8a'];
 function gcol(id){var n=0;for(var i=0;i<id.length;i++)n=(n*31+id.charCodeAt(i))%9973;return GCOL[n%GCOL.length]}
-function av(id,extra){var s=state.saints.find(function(x){return x.id===id});return h('span',{class:'av '+id+(extra||''),style:s&&(s.guest||['g','hs','mm','hp','np','ap'].indexOf(id)<0)?'background:'+gcol(id):null,title:s?s.name:'',text:s?s.short:'?'})}
+function av(id,extra){return avFor(state.saints.find(function(x){return x.id===id}),id,extra)}
+function avFor(s,id,extra){var sp=h('span',{class:'av '+id+(s&&s.photo?' ph':'')+(extra||''),style:s&&(s.guest||['g','hs','mm','hp','np','ap'].indexOf(id)<0)?'background:'+gcol(id):null,title:s?s.name:'',text:s?s.short:'?'});
+ if(s&&s.photo){var im=pimg(s.photo,{alt:'',style:'position:absolute;inset:0;width:100%;height:100%;object-fit:cover'});im.addEventListener('error',function(){im.remove()});sp.append(im)}
+ return sp}
 function stayFor(d){var m=null;state.stays.forEach(function(s){if(s.start<=d&&d<=s.end)m=s});return m}
 function dayAll(d){return state.events.filter(function(e){return e.date<=d&&d<=(e.endDate||e.date)})}
 function hasSel(e){return !ui.sel.length||ui.sel.some(function(id){return e.saints.indexOf(id)>-1})}
@@ -1172,6 +1176,33 @@ function openSeries(title,place){
   h('div',{class:'row'},h('button',{class:'btn pri',type:'submit'},T('Done')),h('button',{class:'btn',type:'button',onclick:function(){modal.remove()}},T('Cancel'))));
  modal.append(form);document.body.append(modal);backable(modal)}
 
+function shrinkSq(file,n){return new Promise(function(res,rej){var img=new Image(),u=URL.createObjectURL(file);img.onload=function(){var m=Math.min(img.width,img.height),c=document.createElement('canvas');c.width=c.height=n;c.getContext('2d').drawImage(img,(img.width-m)/2,(img.height-m)/2,m,m,0,0,n,n);URL.revokeObjectURL(u);c.toBlob(function(b){b?res(b):rej()},'image/jpeg',.85)};img.onerror=function(){URL.revokeObjectURL(u);rej()};img.src=u})}
+function openSaintEdit(s,done){
+ var draft={photo:s.photo||''},msg='',busy=false;
+ var inStyle='padding:9px;border:1px solid var(--line);border-radius:10px;background:var(--surface)';
+ var modal=h('div',{class:'modal',role:'dialog','aria-modal':'true','aria-label':'Edit saint',style:'z-index:30'});
+ var nameIn=h('input',{type:'text',value:s.name,autocomplete:'off',style:inStyle});
+ var shortIn=h('input',{type:'text',value:s.short||'',maxlength:'3',autocomplete:'off',style:inStyle+';width:90px'});
+ var prev=h('div',{style:'display:flex;align-items:center;gap:12px'});
+ var note=h('p',{class:'note',style:'margin:0'});
+ var file=h('input',{type:'file',accept:'image/*',style:'display:none',onchange:function(ev){var f=ev.target.files[0];ev.target.value='';if(!f)return;busy=true;note.textContent='Uploading photo';
+  shrinkSq(f,256).then(function(b){return ui.assets.upload(b)}).then(function(r){draft.photo=r.id;busy=false;note.textContent='';drawPrev()}).catch(function(){busy=false;note.textContent='Could not upload that picture. Try another.'})}});
+ function drawPrev(){prev.textContent='';
+  var sp=avFor({id:s.id,name:s.name,short:(shortIn.value||s.short||'?').toUpperCase(),photo:draft.photo,guest:s.guest},s.id,'');sp.style.width=sp.style.height='72px';sp.style.fontSize='22px';
+  prev.append(sp,h('div',{style:'display:flex;flex-direction:column;gap:6px'},
+   h('button',{class:'btn sm',type:'button',onclick:function(){file.click()}},draft.photo?'Change photo':'Upload photo'),
+   draft.photo?h('button',{class:'btn sm',type:'button',onclick:function(){draft.photo='';drawPrev()}},'Remove photo'):null))}
+ shortIn.addEventListener('input',drawPrev);
+ var form=h('form',{class:'form',onsubmit:function(e){e.preventDefault();
+  var nm=nameIn.value.trim();if(!nm){nameIn.focus();return}if(busy)return;
+  s.name=nm;s.short=(shortIn.value.trim()||s.short||'?').toUpperCase().slice(0,3);if(draft.photo)s.photo=draft.photo;else delete s.photo;
+  ui.dirty++;save();modal.remove();if(done)done()}},
+  h('div',{class:'row',style:'justify-content:space-between;align-items:center'},h('h2',{style:'margin:0',text:'Edit saint'}),h('button',{class:'btn sm',type:'button','aria-label':'Close',onclick:function(){modal.remove()}},'×')),
+  prev,file,note,
+  h('div',{class:'f'},h('label',{text:'Name'}),nameIn),
+  h('div',{class:'f'},h('label',{text:'Initials (shown when there is no photo)'}),shortIn),
+  h('div',{class:'row'},h('button',{class:'btn pri',type:'submit'},'Save'),h('button',{class:'btn',type:'button',onclick:function(){modal.remove()}},'Cancel')));
+ drawPrev();modal.append(form);document.body.append(modal);backable(modal)}
 var ME='mm';
 function meBadge(){return h('span',{style:'font-size:10px;font-weight:700;padding:1px 6px;border-radius:999px;background:var(--accent);color:#fff;margin-left:4px;align-self:center',text:'me'})}
 function orderedSaints(){var me=state.saints.filter(function(s){return s.id===ME}),rest=state.saints.filter(function(s){return s.id!==ME});return me.concat(rest)}
@@ -1222,17 +1253,17 @@ function openAdmin(){
   var cp=h('button',{class:'btn sm',type:'button'},'Copy link');cp.addEventListener('click',function(){copyText(link,cp)});
   var rs=h('select',{'aria-label':'Role for '+g.name,style:'padding:5px 8px;border:1px solid var(--line);border-radius:10px;background:var(--surface)',onchange:function(){act('admin_update_guest',{p_passcode:pass,p_id:g.id,p_blocked:null,p_role:rs.value})}},h('option',{value:'reader',text:'Reader'}),h('option',{value:'editor',text:'Editor'}));rs.value=g.role;
   return h('div',{style:'border-top:1px solid var(--line);padding-top:10px;display:flex;flex-direction:column;gap:6px'+(g.blocked?';opacity:.65':'')},
-   h('div',{class:'row',style:'flex-wrap:nowrap'},s?av(s.id):null,h('span',{style:'font-weight:700',text:g.name+(g.blocked?'  (blocked)':'')}),s&&s.id===ME?meBadge():null),
+   h('div',{class:'row',style:'flex-wrap:nowrap'},s?av(s.id):null,h('span',{style:'font-weight:700',text:(s?s.name:g.name)+(g.blocked?'  (blocked)':'')}),s&&s.id===ME?meBadge():null),
    h('div',{class:'faint',style:'word-break:break-all',text:link}),
    h('div',{class:'faint',text:seenTxt(g.last_seen)+' · '+g.visits+(g.visits===1?' visit':' visits')}),
-   h('div',{class:'row'},cp,rs,
+   h('div',{class:'row'},cp,rs,s?h('button',{class:'btn sm',type:'button',onclick:function(){openSaintEdit(s,draw)}},'Edit name & photo'):null,
     h('button',{class:'btn sm',type:'button',onclick:function(){act('admin_update_guest',{p_passcode:pass,p_id:g.id,p_blocked:!g.blocked,p_role:null})}},g.blocked?'Unblock':'Block'),
     h('button',{class:'btn sm danger',type:'button',onclick:function(){if(confirm('Remove the link for '+g.name+'? It will stop working.'))act('admin_delete_guest',{p_passcode:pass,p_id:g.id})}},'Delete link')))}
  function nolink(s){
   return h('div',{style:'border-top:1px solid var(--line);padding-top:10px;display:flex;flex-direction:column;gap:6px'},
    h('div',{class:'row',style:'flex-wrap:nowrap'},av(s.id),h('span',{style:'font-weight:700',text:s.name}),s.id===ME?meBadge():null),
    h('div',{class:'faint',text:'No link yet'}),
-   h('div',{class:'row'},h('button',{class:'btn sm',type:'button',onclick:function(){makeOne(s)}},'Make link')))}
+   h('div',{class:'row'},h('button',{class:'btn sm',type:'button',onclick:function(){makeOne(s)}},'Make link'),h('button',{class:'btn sm',type:'button',onclick:function(){openSaintEdit(s,draw)}},'Edit name & photo')))}
  function put(){[].slice.call(arguments).forEach(function(c){if(Array.isArray(c))c.forEach(function(x){if(x)body.append(x)});else if(c)body.append(c)})}
  function draw(){body.textContent='';
   var byS={};list.forEach(function(g){if(g.saint_id)byS[g.saint_id]=g});
@@ -1276,7 +1307,7 @@ function picGet(id){return idb().then(function(db){return new Promise(function(r
 function picPut(id,d){return idb().then(function(db){db.transaction('p','readwrite').objectStore('p').put(d,id)}).catch(function(){})}
 function picNet(id){return rpc('get_tour_pic',{p_passcode:getPass(),p_id:id}).then(function(d){if(d){picCache[id]=d;picPut(id,d)}return d})}
 function pimg(id,attrs){var im=h('img',attrs);if(picCache[id])im.src=picCache[id];else picGet(id).then(function(d){if(d){picCache[id]=d;im.src=d;return}return picNet(id).then(function(d2){if(d2)im.src=d2;else im.dispatchEvent(new Event('error'))})}).catch(function(){im.dispatchEvent(new Event('error'))});return im}
-function prefetchPics(){var ids={};(state.events||[]).forEach(function(e){(e.photos||[]).forEach(function(p){if(p&&p.id)ids[p.id]=1})});if(state.hero)ids[state.hero]=1;
+function prefetchPics(){var ids={};(state.events||[]).forEach(function(e){(e.photos||[]).forEach(function(p){if(p&&p.id)ids[p.id]=1})});if(state.hero)ids[state.hero]=1;(state.saints||[]).forEach(function(sa){if(sa.photo)ids[sa.photo]=1});
  var list=Object.keys(ids);(function next(){var id=list.shift();if(!id)return;picGet(id).then(function(d){if(d){picCache[id]=d;return}return picNet(id)}).catch(function(){}).then(next)})()}
 function blobToUrl(b){return new Promise(function(res,rej){var f=new FileReader();f.onload=function(){res(f.result)};f.onerror=rej;f.readAsDataURL(b)})}
 function uploadPic(b){
