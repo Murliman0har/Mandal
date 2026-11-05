@@ -1069,7 +1069,24 @@ function openForm(ev){
   ui.assets?h('input',{type:'file',id:'f_photos',accept:'image/*',multiple:true,onchange:function(ev){
     var files=[].slice.call(ev.target.files);ev.target.value='';var n=0;pstat.textContent='Uploading...';
     files.reduce(function(p,f){return p.then(function(){return shrink(f).then(function(b){return ui.assets.upload(b)}).then(function(r){e.photos.push({id:r.id});n++;drawThumbs()}).catch(function(){pstat.textContent='One picture could not be uploaded.'})})},Promise.resolve()).then(function(){if(n)pstat.textContent=n+' added. Press Done, then Save and publish.'})}}):h('span',{class:'note',text:'Picture upload needs editor access.'}),pstat);
- var saintsBox=h('div',{class:'f'},h('span',{class:'lab',text:T('Saints')}),checks,plusBtn(function(){addSaintInline(function(sa){var c=h('input',{type:'checkbox',value:sa.id});c.checked=true;checks.append(h('label',{},c,av(sa.id),short(sa)));['vakta','kvakta'].forEach(function(kk){var el=F[kk];if(el&&sa.role==='Vakta'&&![].slice.call(el.options).some(function(o){return o.value===sa.id}))el.append(h('option',{value:sa.id,text:sa.name}))})},false,haveIn(checks))}));
+ var saintsBox=h('div',{class:'f'},h('span',{class:'lab',text:T('Saints')}),checks,plusBtn(function(){addSaintInline(function(sa){var c=h('input',{type:'checkbox',value:sa.id});c.checked=true;checks.append(h('label',{},c,av(sa.id),short(sa)));checks.dispatchEvent(new Event('change'));['vakta','kvakta'].forEach(function(kk){var el=F[kk];if(el&&sa.role==='Vakta'&&![].slice.call(el.options).some(function(o){return o.value===sa.id}))el.append(h('option',{value:sa.id,text:sa.name}))})},false,haveIn(checks))}));
+
+ e.cars=(e.cars||[]).map(function(c){return {saints:(c.saints||[]).slice(),driver:c.driver||''}});
+ var carsBox=h('div',{style:'display:flex;flex-direction:column;gap:10px'});
+ function tickedIds(){return [].slice.call(checks.querySelectorAll('input')).filter(function(c){return c.checked}).map(function(c){return c.value})}
+ function drawCars(){carsBox.textContent='';var tk=tickedIds();
+  e.cars.forEach(function(c,ci){c.saints=c.saints.filter(function(i){return tk.indexOf(i)>-1});
+   var dIn=h('input',{type:'text',value:c.driver,placeholder:'Driver name',autocomplete:'off',style:'padding:9px;border:1px solid var(--line);border-radius:10px;background:var(--surface)',oninput:function(){c.driver=dIn.value}});
+   var list=h('div',{class:'checks'},tk.map(function(i){var cb=h('input',{type:'checkbox',value:i});cb.checked=c.saints.indexOf(i)>-1;
+    cb.addEventListener('change',function(){if(cb.checked){e.cars.forEach(function(o,oi){if(oi!==ci)o.saints=o.saints.filter(function(x){return x!==i})});if(c.saints.indexOf(i)<0)c.saints.push(i)}else c.saints=c.saints.filter(function(x){return x!==i});drawCars()});
+    return h('label',{},cb,av(i),sName(i)||i)}));
+   carsBox.append(h('div',{class:'f',style:'border:1px solid var(--line);border-radius:12px;padding:10px;gap:8px'},
+    h('div',{class:'row',style:'justify-content:space-between;align-items:center'},h('b',{text:'Car '+(ci+2)}),h('button',{class:'btn sm danger',type:'button',onclick:function(){e.cars.splice(ci,1);drawCars()}},'Remove car')),
+    h('div',{class:'f'},h('label',{text:'Driver name'}),dIn),
+    h('div',{class:'f'},h('label',{text:'Saints in this car'}),tk.length?list:h('span',{class:'note',text:'Tick the saints in this event first.'}))))});
+  carsBox.append(h('button',{class:'btn',type:'button',style:'align-self:flex-start',onclick:function(){e.cars.push({saints:[],driver:''});drawCars()}},'+ Add car'));
+  if(!e.cars.length)carsBox.insertBefore(h('p',{class:'note',style:'margin:0',text:'Everyone is in Car 1. Add a car to put some saints in another car.'}),carsBox.firstChild)}
+ drawCars();checks.addEventListener('change',drawCars);
  var modal=h('div',{class:'modal',role:'dialog','aria-modal':'true','aria-label':isNew?T('Add event'):T('Edit event')});
  var delBtn=h('button',{class:'btn danger',type:'button',title:T('Delete'),'aria-label':T('Delete'),style:'padding:6px 9px;line-height:0',onclick:function(){if(!confirm(lang==='gu'?'આ કાર્યક્રમ કાઢી નાખવો છે?':'Delete this event?'))return;state.events=state.events.filter(function(x){return x.id!==e.id});ui.dirty++;modal.remove();render()}});
  delBtn.innerHTML='<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>';
@@ -1089,7 +1106,7 @@ function openForm(ev){
   grp('kat',[field('kvakta',T('Vakta'),sel(saintOpts,e.vakta),vplus('kvakta'))]),
   grp('yajman',[field('yajman',T('Yajman'),inp('yajman','text',e.yajman))]),
   grp('shift',[h('div',{class:'two'},field('from',T('Shifting from'),inp('from','text',e.from)),field('to',T('Shifting to'),inp('to','text',e.to)))]),
-  grp('ride',[h('div',{class:'two'},field('driver',T('Driver'),inp('driver','text',e.driver)),field('phone',T('Driver contact number'),inp('phone','tel',e.phone)))]),
+  grp('ride',[h('div',{class:'two'},field('driver',T('Driver'),inp('driver','text',e.driver)),field('phone',T('Driver contact number'),inp('phone','tel',e.phone))),carsBox]),
   grp('flight',[field('flight',T('Flight number'),inp('flight','text',e.flight)),h('div',{class:'two'},field('from2',T('From'),inp('from2','text',e.from)),field('to2',T('To'),inp('to2','text',e.to)))]),
   saintsBox,
   field('notes',T('Notes'),h('textarea',{rows:'2',text:e.notes||''})),
@@ -1110,6 +1127,7 @@ function openForm(ev){
   e.type=t;e.title=F.title.value.trim();e.date=F.date.value;e.endDate=F.endDate.value&&F.endDate.value>F.date.value?F.endDate.value:'';
   e.start=F.start.value;e.end=F.end.value;e.place=F.place.value.trim();e.notes=F.notes.value.trim();
   e.saints=[].slice.call(checks.querySelectorAll('input')).filter(function(c){return c.checked}).map(function(c){return c.value});
+  e.cars=(RIDE.indexOf(typeSel.value)<0||typeSel.value==='pravachan')?[]:(e.cars||[]).map(function(c){return {driver:(c.driver||'').trim(),saints:c.saints.filter(function(i){return e.saints.indexOf(i)>-1})}}).filter(function(c){return c.driver||c.saints.length});
   e.session=F.session.value;e.vakta=F.vakta.value;if(t==='katha')e.vakta=F.kvakta.value;e.shastra=F.shastra.value.trim();e.portion=F.portion.value.trim();
   e.yajman=F.yajman.value.trim();e.driver=F.driver.value.trim();e.phone=F.phone.value.trim();e.flight=F.flight.value.trim();
   if(t==='car'){e.from=F.from.value.trim();e.to=F.to.value.trim();e.title=route(e);e.endDate=''}else if(t==='flight'){e.from=F.from2.value.trim();e.to=F.to2.value.trim()}
@@ -1412,9 +1430,16 @@ function showEventSaints(id){
  if(e.vakta&&ids.indexOf(e.vakta)<0)ids.unshift(e.vakta);
  ids.sort(function(a,b){return (b===e.vakta)-(a===e.vakta)});
  var modal=h('div',{class:'modal who',role:'dialog','aria-modal':'true','aria-label':gu?'આ કાર્યક્રમમાં સંતો':'Saints in this event',onclick:function(ev){if(ev.target===modal)modal.remove()}});
- var rows=ids.length?ids.map(function(i){return h('div',{class:'srow'},av(i),h('span',{style:'flex:1;font-weight:600',text:sName(i)||i}),i===e.vakta?h('span',{class:'faint',text:gu?'વક્તા':'Vakta'}):null)}):[h('p',{class:'note',style:'margin:0',text:gu?'કોઈ સંત પસંદ કર્યા નથી.':'No saints chosen for this event.'})];
- var info=[];if(e.driver)info.push(h('div',{class:'srow'},h('span',{class:'faint',style:'min-width:56px',text:gu?'ડ્રાઇવર':'Driver'}),h('span',{style:'font-weight:600',text:e.driver})));if(e.car)info.push(h('div',{class:'srow'},h('span',{class:'faint',style:'min-width:56px',text:gu?'ગાડી':'Car'}),h('span',{style:'font-weight:600',text:e.car})));
- var bg=STK[e.type]?h('img',{src:STK[e.type],alt:'','aria-hidden':'true',style:'position:absolute;right:-6px;bottom:-6px;width:62%;max-width:260px;height:auto;opacity:.3;pointer-events:none;z-index:0;-webkit-mask-image:linear-gradient(to right,transparent,#000 55%);mask-image:linear-gradient(to right,transparent,#000 55%)'}):null;
+ function rowFor(i){return h('div',{class:'srow'},av(i),h('span',{style:'flex:1;font-weight:600',text:sName(i)||i}),i===e.vakta?h('span',{class:'faint',text:gu?'વક્તા':'Vakta'}):null)}
+ var xc=(e.cars||[]).filter(function(c){return c.driver||(c.saints||[]).length}),hasCars=xc.length>0,used={};
+ xc.forEach(function(c){(c.saints||[]).forEach(function(i){used[i]=1})});
+ function sec(title,drv,list){return h('div',{style:'display:flex;flex-direction:column;gap:8px'},h('div',{style:'display:flex;justify-content:space-between;align-items:baseline;gap:8px;border-bottom:1px solid var(--line);padding-bottom:4px'},h('b',{text:title}),drv?h('span',{class:'faint',text:(gu?'ડ્રાઇવર: ':'Driver: ')+drv}):null),list.length?list.map(rowFor):h('span',{class:'note',text:gu?'કોઈ નહીં':'No one'}))}
+ var rows;
+ if(!ids.length)rows=[h('p',{class:'note',style:'margin:0',text:gu?'કોઈ સંત પસંદ કર્યા નથી.':'No saints chosen for this event.'})];
+ else if(hasCars){rows=[sec((gu?'ગાડી ':'Car ')+dg(1),e.driver,ids.filter(function(i){return !used[i]}))].concat(xc.map(function(c,k){return sec((gu?'ગાડી ':'Car ')+dg(k+2),c.driver,ids.filter(function(i){return (c.saints||[]).indexOf(i)>-1}))}))}
+ else rows=ids.map(rowFor);
+ var info=[];if(e.driver&&!hasCars)info.push(h('div',{class:'srow'},h('span',{class:'faint',style:'min-width:56px',text:gu?'ડ્રાઇવર':'Driver'}),h('span',{style:'font-weight:600',text:e.driver})));if(e.car)info.push(h('div',{class:'srow'},h('span',{class:'faint',style:'min-width:56px',text:gu?'ગાડી':'Car'}),h('span',{style:'font-weight:600',text:e.car})));
+ var bg=STK[e.type]?h('img',{src:STK[e.type],alt:'','aria-hidden':'true',style:'position:absolute;right:-6px;bottom:-6px;width:62%;max-width:260px;height:auto;opacity:.22;pointer-events:none;z-index:0;-webkit-mask-image:linear-gradient(to right,transparent,#000 55%);mask-image:linear-gradient(to right,transparent,#000 55%)'}):null;
  var form=h('div',{class:'form',style:'position:relative;overflow:hidden'},bg,
   h('div',{class:'row',style:'justify-content:space-between;align-items:center;flex-wrap:nowrap;position:relative;z-index:1'},h('h2',{style:'margin:0',text:tr(e.title)||typeLabel(e.type)}),h('button',{class:'btn sm',type:'button','aria-label':'Close',onclick:function(){modal.remove()}},'×')),
   h('p',{class:'note',style:'margin:0;position:relative;z-index:1',text:(gu?'આ કાર્યક્રમમાં સંતો':'Saints in this event')+' ('+dg(ids.length)+')'}),
