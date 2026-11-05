@@ -149,6 +149,7 @@ button{cursor:pointer}
 .av.g{background:var(--s-g)}.av.hs{background:var(--s-hs)}.av.mm{background:var(--s-mm)}.av.hp{background:var(--s-hp)}.av.np{background:var(--s-np)}.av.ap{background:var(--s-ap)}
 .av.all{background:var(--fg);color:var(--bg)}
 .av.ph{position:relative;overflow:hidden}
+.modal.who,.modal.who *{-webkit-user-select:none!important;user-select:none!important;-webkit-touch-callout:none!important;-webkit-tap-highlight-color:transparent}
 .ev[data-eid]{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
 .ev[data-eid] input,.ev[data-eid] textarea{-webkit-user-select:text;user-select:text}
 .ev{display:grid;grid-template-columns:92px minmax(0,1fr);background:var(--surface);border:1px solid var(--line);border-radius:14px;overflow:hidden}
@@ -1418,6 +1419,7 @@ function showEventSaints(id){
   h('div',{class:'row',style:'justify-content:space-between;align-items:center;flex-wrap:nowrap;position:relative;z-index:1'},h('h2',{style:'margin:0',text:tr(e.title)||typeLabel(e.type)}),h('button',{class:'btn sm',type:'button','aria-label':'Close',onclick:function(){modal.remove()}},'×')),
   h('p',{class:'note',style:'margin:0;position:relative;z-index:1',text:(gu?'આ કાર્યક્રમમાં સંતો':'Saints in this event')+' ('+dg(ids.length)+')'}),
   h('div',{style:'display:flex;flex-direction:column;gap:12px;position:relative;z-index:1'},rows,info));
+ ['selectstart','contextmenu','dragstart'].forEach(function(t){modal.addEventListener(t,function(ev){ev.preventDefault()})});
  modal.append(form);document.body.append(modal);backable(modal);try{var sel=window.getSelection&&window.getSelection();if(sel&&sel.removeAllRanges)sel.removeAllRanges()}catch(x){}try{navigator.vibrate&&navigator.vibrate(15)}catch(x){}}
 (function(){var t=null,sx=0,sy=0,last=0;
  function cancel(){if(t){clearTimeout(t);t=null}}
