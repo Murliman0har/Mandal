@@ -1413,10 +1413,12 @@ function showEventSaints(id){
  ids.sort(function(a,b){return (b===e.vakta)-(a===e.vakta)});
  var modal=h('div',{class:'modal who',role:'dialog','aria-modal':'true','aria-label':gu?'આ કાર્યક્રમમાં સંતો':'Saints in this event',onclick:function(ev){if(ev.target===modal)modal.remove()}});
  var rows=ids.length?ids.map(function(i){return h('div',{class:'srow'},av(i),h('span',{style:'flex:1;font-weight:600',text:sName(i)||i}),i===e.vakta?h('span',{class:'faint',text:gu?'વક્તા':'Vakta'}):null)}):[h('p',{class:'note',style:'margin:0',text:gu?'કોઈ સંત પસંદ કર્યા નથી.':'No saints chosen for this event.'})];
- var form=h('div',{class:'form'},
-  h('div',{class:'row',style:'justify-content:space-between;align-items:center;flex-wrap:nowrap'},h('h2',{style:'margin:0',text:tr(e.title)||typeLabel(e.type)}),h('button',{class:'btn sm',type:'button','aria-label':'Close',onclick:function(){modal.remove()}},'×')),
-  h('p',{class:'note',style:'margin:0',text:(gu?'આ કાર્યક્રમમાં સંતો':'Saints in this event')+' ('+dg(ids.length)+')'}),
-  rows);
+ var info=[];if(e.driver)info.push(h('div',{class:'srow'},h('span',{class:'faint',style:'min-width:56px',text:gu?'ડ્રાઇવર':'Driver'}),h('span',{style:'font-weight:600',text:e.driver})));if(e.car)info.push(h('div',{class:'srow'},h('span',{class:'faint',style:'min-width:56px',text:gu?'ગાડી':'Car'}),h('span',{style:'font-weight:600',text:e.car})));
+ var bg=STK[e.type]?h('img',{src:STK[e.type],alt:'','aria-hidden':'true',style:'position:absolute;right:-6px;bottom:-6px;width:62%;max-width:260px;height:auto;opacity:.3;pointer-events:none;z-index:0;-webkit-mask-image:linear-gradient(to right,transparent,#000 55%);mask-image:linear-gradient(to right,transparent,#000 55%)'}):null;
+ var form=h('div',{class:'form',style:'position:relative;overflow:hidden'},bg,
+  h('div',{class:'row',style:'justify-content:space-between;align-items:center;flex-wrap:nowrap;position:relative;z-index:1'},h('h2',{style:'margin:0',text:tr(e.title)||typeLabel(e.type)}),h('button',{class:'btn sm',type:'button','aria-label':'Close',onclick:function(){modal.remove()}},'×')),
+  h('p',{class:'note',style:'margin:0;position:relative;z-index:1',text:(gu?'આ કાર્યક્રમમાં સંતો':'Saints in this event')+' ('+dg(ids.length)+')'}),
+  h('div',{style:'display:flex;flex-direction:column;gap:12px;position:relative;z-index:1'},rows,info));
  modal.append(form);document.body.append(modal);backable(modal);try{navigator.vibrate&&navigator.vibrate(15)}catch(x){}}
 (function(){var t=null,sx=0,sy=0,last=0;
  function cancel(){if(t){clearTimeout(t);t=null}}
