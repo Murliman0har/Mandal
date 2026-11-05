@@ -623,10 +623,13 @@ function evCard(e,isNow,isNext){
    (!everyone&&e.saints.length)?h('div',{class:'row'},e.saints.map(function(i){return h('span',{class:'row'},av(i),h('span',{class:'faint',text:sName(i)}))})):null,
    ui.canEdit?h('div',{class:'row'},h('button',{class:'btn sm',type:'button',onclick:function(){openForm(e)}},'Edit'),(e.type==='parayan'&&seriesOf(e).length>1)?h('button',{class:'btn sm',type:'button',onclick:function(){openSeries(e.title,e.place)}},'Vakta & part for all sessions'):null):null));
 }
-function backable(m){var _rm=m.remove.bind(m),done=false;function onpop(){window.removeEventListener('popstate',onpop);if(!done){done=true;_rm()}}
+var mstack=[],skipPop=0;
+window.addEventListener('popstate',function(){if(skipPop>0){skipPop--;return}var t=mstack[mstack.length-1];if(t)t.fromBack()});
+function backable(m){var _rm=m.remove.bind(m),done=false;
  try{history.pushState({mf:1},'')}catch(x){return}
- window.addEventListener('popstate',onpop);
- m.remove=function(){if(done)return;done=true;_rm();window.removeEventListener('popstate',onpop);if(history.state&&history.state.mf)history.back()}}
+ var ent={fromBack:function(){if(done)return;done=true;var i=mstack.indexOf(ent);if(i>-1)mstack.splice(i,1);_rm()}};
+ mstack.push(ent);
+ m.remove=function(){if(done)return;done=true;var i=mstack.indexOf(ent);if(i>-1)mstack.splice(i,1);_rm();if(history.state&&history.state.mf){skipPop++;history.back()}}}
 function openPic(id){var o=h('div',{class:'modal',style:'align-items:center',onclick:function(){o.remove()}},pimg(id,{alt:'Picture',style:'max-width:100%;max-height:92vh;border-radius:8px;margin:auto'}));document.body.append(o);backable(o)}
 function picsEl(e){return h('div',{class:'pics'+(e.photos.length===1?' one':'')},e.photos.map(function(p){return pimg(p.id,{alt:'Picture',onclick:function(){openPic(p.id)}})}))}
 function shrink(file){return new Promise(function(res,rej){var img=new Image(),u=URL.createObjectURL(file);img.onload=function(){var r=Math.min(1,1800/Math.max(img.width,img.height)),c=document.createElement('canvas');c.width=Math.round(img.width*r);c.height=Math.round(img.height*r);c.getContext('2d').drawImage(img,0,0,c.width,c.height);URL.revokeObjectURL(u);c.toBlob(function(b){b?res(b):rej()},'image/jpeg',.85)};img.onerror=function(){URL.revokeObjectURL(u);rej()};img.src=u})}
