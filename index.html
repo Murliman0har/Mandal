@@ -986,8 +986,9 @@ function sideDrawer(){
   h('button',{class:'chip'+(ui.sel.length?'':' hl'),type:'button','aria-pressed':ui.sel.length?'false':'true',onclick:clear},h('span',{class:'av all',text:lang==='gu'?'બધા':'All'}),T('Everyone'),h('span',{class:'ct',text:dg(day.length)})),
   saintsOn(ui.date).map(function(s){var sel=ui.sel.indexOf(s.id)>-1;return h('button',{class:'chip'+(sel?' hl':''),type:'button','aria-pressed':sel?'true':'false',onclick:toggle(s.id)},av(s.id),short(s),h('span',{class:'ct',text:dg(cnt(s.id))}),h('span',{class:'ck',text:sel?'✓':''}))}),
   h('p',{class:'note',style:'margin:6px 0 0',text:ui.sel.length?(lang==='gu'?'આ દિવસે '+dg(shown)+' કાર્યક્રમ બતાવ્યા ('+dg(day.length)+' માંથી)':'Showing '+shown+' of '+day.length+' events on this day'):(lang==='gu'?'આ દિવસે '+dg(day.length)+' કાર્યક્રમ':day.length+' events on this day')}),
+  ui.admin?h('button',{class:'btn',type:'button',style:'margin-top:10px;width:100%',onclick:function(){closeSide();openAdmin()}},'Admin: people & links'):null,
   h('div',{class:'dfoot'},
-   h('span',{class:'faint',text:(lang==='gu'?(ui.role==='editor'?'સંપાદક તરીકે સાઇન ઇન':'વાચક તરીકે સાઇન ઇન'):('Signed in as '+(ui.role==='editor'?'editor':'reader')))+(ui.offline?(lang==='gu'?' · ઑફલાઇન':' · offline'):'')}),
+   h('span',{class:'faint',text:(lang==='gu'?(ui.role==='editor'?'સંપાદક તરીકે સાઇન ઇન':'વાચક તરીકે સાઇન ઇન'):('Signed in as '+(ui.gname?ui.gname+' (':'')+(ui.admin?'admin':ui.role==='editor'?'editor':'reader')+(ui.gname?')':'')))+(ui.offline?(lang==='gu'?' · ઑફલાઇન':' · offline'):'')}),
    h('button',{class:'btn sm signout',type:'button',onclick:signOut},lang==='gu'?'સાઇન આઉટ':'Sign out')));
  wrap.append(back,dr);
  if(fresh)setTimeout(function(){try{close.focus()}catch(x){}},0);
@@ -1005,7 +1006,7 @@ function signOut(){
  Promise.race([stopPush,new Promise(function(r){setTimeout(r,4000)})]).then(function(){
   setPass('');try{localStorage.removeItem('tourCache')}catch(x){}
   state={tripStart:state.tripStart,tripEnd:state.tripEnd,stays:[],events:[],saints:[]};
-  picCache={};ui.authed=false;ui.canEdit=false;ui.offline=false;ui.role='';ui.rem='';ui.remMsg='';ui.sideOpen=false;ui.dirty=0;ui.msg='';ui.gateMsg='';
+  picCache={};ui.authed=false;ui.canEdit=false;ui.offline=false;ui.role='';ui.admin=false;ui.gname='';ui.rem='';ui.remMsg='';ui.sideOpen=false;ui.dirty=0;ui.msg='';ui.gateMsg='';
   render()})}
 function render(){
  var root=$('#root');root.textContent='';
@@ -1171,6 +1172,55 @@ function openSeries(title,place){
   h('div',{class:'row'},h('button',{class:'btn pri',type:'submit'},T('Done')),h('button',{class:'btn',type:'button',onclick:function(){modal.remove()}},T('Cancel'))));
  modal.append(form);document.body.append(modal);backable(modal)}
 
+function guestBase(){return location.origin+location.pathname.replace(/[^\/]*$/,'')}
+function slugify(s){var t=(s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'').slice(0,28).replace(/-+$/,'');return t||'guest'}
+function rcode(){var a='abcdefghjkmnpqrstuvwxyz23456789',s='';for(var i=0;i<4;i++)s+=a.charAt(Math.floor(Math.random()*a.length));return s}
+function seenTxt(t){if(!t)return 'Not opened yet';try{return 'Last opened '+new Date(t).toLocaleString('en-GB',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}catch(x){return 'Opened'}}
+function copyText(t,btn){var done=function(){var o=btn.textContent;btn.textContent='Copied';setTimeout(function(){btn.textContent=o},1500)};
+ try{navigator.clipboard.writeText(t).then(done,function(){prompt('Copy this link',t)})}catch(x){prompt('Copy this link',t)}}
+function adminErr(e){var s=JSON.stringify(e||{});
+ if(/23505|duplicate/.test(s))return 'That link name is already used. Try another.';
+ if(/bad_slug/.test(s))return 'That link name is not allowed. Try a different name.';
+ if(/bad_name/.test(s))return 'Enter a name first.';
+ if(/bad_passcode/.test(s))return 'Only the admin password can do this. Sign out and sign in with the admin password.';
+ return 'Something went wrong. Check your connection and try again.'}
+function openAdmin(){
+ var pass=getPass(),list=[],msg='',loading=true;
+ var modal=h('div',{class:'modal',role:'dialog','aria-modal':'true','aria-label':'People and links'});
+ var body=h('div',{style:'display:flex;flex-direction:column;gap:12px'});
+ var nameIn=h('input',{type:'text',placeholder:'Name, e.g. Ramesh',autocomplete:'off',style:'padding:9px;border:1px solid var(--line);border-radius:10px;background:var(--surface)'});
+ var roleSel=h('select',{style:'padding:9px;border:1px solid var(--line);border-radius:10px;background:var(--surface)'},h('option',{value:'reader',text:'Reader (view only)'}),h('option',{value:'editor',text:'Editor (can change)'}));
+ var codeCk=h('input',{type:'checkbox',checked:true});
+ function load(){loading=true;draw();rpc('admin_list_guests',{p_passcode:pass}).then(function(r){list=r||[];loading=false;draw()}).catch(function(e){loading=false;msg=adminErr(e);draw()})}
+ function act(name,args){msg='';return rpc(name,args).then(load).catch(function(e){msg=adminErr(e);draw()})}
+ function add(){var nm=nameIn.value.trim();if(!nm){nameIn.focus();return}
+  var slug=slugify(nm)+(codeCk.checked?'-'+rcode():'');
+  msg='';rpc('admin_add_guest',{p_passcode:pass,p_name:nm,p_slug:slug,p_role:roleSel.value}).then(function(g){nameIn.value='';load();var link=guestBase()+g.slug;msg='Added. Link: '+link}).catch(function(e){msg=adminErr(e);draw()})}
+ function row(g){
+  var link=guestBase()+g.slug;
+  var cp=h('button',{class:'btn sm',type:'button'},'Copy link');cp.addEventListener('click',function(){copyText(link,cp)});
+  var rs=h('select',{'aria-label':'Role for '+g.name,style:'padding:5px 8px;border:1px solid var(--line);border-radius:10px;background:var(--surface)',onchange:function(){act('admin_update_guest',{p_passcode:pass,p_id:g.id,p_blocked:null,p_role:rs.value})}},h('option',{value:'reader',text:'Reader'}),h('option',{value:'editor',text:'Editor'}));rs.value=g.role;
+  return h('div',{style:'border-top:1px solid var(--line);padding-top:10px;display:flex;flex-direction:column;gap:6px'+(g.blocked?';opacity:.65':'')},
+   h('div',{style:'font-weight:700',text:g.name+(g.blocked?'  (blocked)':'')}),
+   h('div',{class:'faint',style:'word-break:break-all',text:link}),
+   h('div',{class:'faint',text:seenTxt(g.last_seen)+' · '+g.visits+(g.visits===1?' visit':' visits')}),
+   h('div',{class:'row'},cp,rs,
+    h('button',{class:'btn sm',type:'button',onclick:function(){act('admin_update_guest',{p_passcode:pass,p_id:g.id,p_blocked:!g.blocked,p_role:null})}},g.blocked?'Unblock':'Block'),
+    h('button',{class:'btn sm danger',type:'button',onclick:function(){if(confirm('Remove '+g.name+'? Their link will stop working.'))act('admin_delete_guest',{p_passcode:pass,p_id:g.id})}},'Delete')))}
+ function draw(){body.textContent='';
+  body.append(
+   h('div',{class:'f'},h('label',{text:'Add a person'}),nameIn),
+   h('div',{class:'f'},h('label',{text:'Access'}),roleSel),
+   h('label',{style:'display:flex;gap:8px;align-items:center;font-size:13px'},codeCk,'Add a short random code to the link (harder to guess)'),
+   h('button',{class:'btn pri',type:'button',onclick:add},'Add person and make link'),
+   msg?h('p',{class:'note',style:'margin:0;word-break:break-all',text:msg}):null,
+   loading?h('p',{class:'note',text:'Loading'}):(list.length?list.map(row):h('p',{class:'note',text:'No one added yet.'})))}
+ var form=h('div',{class:'form'},
+  h('div',{class:'row',style:'justify-content:space-between;align-items:center'},h('h2',{style:'margin:0',text:'People & links'}),h('button',{class:'btn sm',type:'button','aria-label':'Close',onclick:function(){modal.remove()}},'×')),
+  h('p',{class:'note',style:'margin:0',text:'Give each person their own link. Block or delete a person any time to close their access. Change Reader or Editor whenever you like.'}),
+  body);
+ modal.append(form);document.body.append(modal);backable(modal);load()}
+
 function buildDoc(){
  var css=document.getElementById('css').textContent,code=document.getElementById('app').textContent;
  var json=JSON.stringify(state).replace(/</g,'\\u003c');
@@ -1201,10 +1251,10 @@ function enter(pass){
  ui.gateMsg='';ui.busy=true;render();
  return Promise.race([rpc('get_tour_state',{p_passcode:pass}),new Promise(function(_,rj){setTimeout(function(){rj({message:'timeout'})},10000)})]).then(function(res){
   if(!res||!res.data||!res.data.events)throw {message:'empty'};
-  setPass(pass);try{localStorage.setItem('tourCache',JSON.stringify({pass:pass,res:res}))}catch(x){}state=res.data;normState();ui.role=res.role;ui.canEdit=res.role==='editor';ui.authed=true;ui.autoNow=true;ui.busy=false;ui.date=calClamp(today());render();loadTithi();remRefresh().then(render);prefetchPics()
+  setPass(pass);try{localStorage.setItem('tourCache',JSON.stringify({pass:pass,res:res}))}catch(x){}state=res.data;normState();ui.role=res.role;ui.admin=!!res.admin;ui.gname=res.name||'';ui.canEdit=res.role==='editor';ui.authed=true;ui.autoNow=true;ui.busy=false;ui.date=calClamp(today());render();loadTithi();remRefresh().then(render);prefetchPics()
  }).catch(function(err){
   ui.busy=false;ui.authed=false;
-  if(/bad_passcode/.test(JSON.stringify(err||{}))){setPass('');try{localStorage.removeItem('tourCache')}catch(x){}ui.gateMsg='Wrong password.'}
+  if(/bad_passcode/.test(JSON.stringify(err||{}))){setPass('');try{localStorage.removeItem('tourCache')}catch(x){}ui.gateMsg=ui.viaLink?'This link is not active. Please ask for a new link.':'Wrong password.'}
   else{var c=null;try{c=JSON.parse(localStorage.getItem('tourCache')||'null')}catch(x){}
    if(c&&c.pass===pass&&c.res&&c.res.data){state=c.res.data;normState();ui.role='reader';ui.canEdit=false;ui.authed=true;ui.autoNow=true;ui.offline=true;ui.date=calClamp(today());render();return}
    ui.gateMsg='Could not open the program. Check your connection and try again.'}
@@ -1212,7 +1262,7 @@ function enter(pass){
 function drawGate(){
  var r=document.getElementById('root');r.textContent='';
  var inp=h('input',{type:'password',id:'gp',autocomplete:'current-password',placeholder:'Password'});
- var form=h('form',{class:'form',style:'margin-top:18vh',onsubmit:function(e){e.preventDefault();var v=inp.value.trim();if(v)enter(v)}},
+ var form=h('form',{class:'form',style:'margin-top:18vh',onsubmit:function(e){e.preventDefault();var v=inp.value.trim();if(v){ui.viaLink=false;enter(v)}}},
   h('h1',{text:'London Yatra'}),
   h('p',{class:'note',text:'Enter the password to open the program.'}),
   h('div',{class:'f'},h('label',{for:'gp',text:'Password'}),inp),
@@ -1229,7 +1279,9 @@ function fitRails(){[].slice.call(document.querySelectorAll('.ev.t-pravachan .ra
 window.addEventListener('resize',fitRails);
 var _render=render;render=function(){if(!ui.authed){drawGate();return}_render();fitRails();requestAnimationFrame(fitRails)};
 ui.date=calClamp(today());
-if(getPass())enter(getPass());else render();
+(function(){var g='';try{g=(new URLSearchParams(location.search).get('g')||'').trim().toLowerCase()}catch(x){}
+ if(g){ui.viaLink=true;setPass(g);try{history.replaceState(null,'',location.pathname)}catch(x){}}
+ if(getPass())enter(getPass());else render()})();
 function speak(t){try{if(!('speechSynthesis' in window))return;var u=new SpeechSynthesisUtterance(t);u.lang='gu-IN';var vs=speechSynthesis.getVoices(),v=null;for(var i=0;i<vs.length;i++){if(/^gu/i.test(vs[i].lang)){v=vs[i];break}}if(v)u.voice=v;u.rate=.9;speechSynthesis.cancel();speechSynthesis.speak(u)}catch(x){}}
 if('serviceWorker' in navigator){navigator.serviceWorker.addEventListener('message',function(ev){var d=ev.data;if(d&&d.type==='speak'&&d.text)speak(d.text)})}
 if('serviceWorker' in navigator&&/^https?:/.test(location.protocol)){window.addEventListener('load',function(){navigator.serviceWorker.register('sw.js').catch(function(){})})}

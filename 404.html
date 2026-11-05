@@ -1,0 +1,23 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Opening…</title>
+<script>
+// A personal link such as /mandal/ramesh-k7x2 has no real page on GitHub Pages,
+// so it lands here and is passed on to the app as ?g=ramesh-k7x2.
+(function () {
+  var p = location.pathname.split('/').filter(Boolean), i = -1;
+  for (var k = 0; k < p.length; k++) { if (p[k].toLowerCase() === 'mandal') { i = k; break; } }
+  var base = '/' + (i >= 0 ? p.slice(0, i + 1).join('/') + '/' : '');
+  var slug = p[i + 1] || '';
+  if (slug && slug.indexOf('.') < 0) location.replace(base + '?g=' + encodeURIComponent(slug));
+  else location.replace(base);
+})();
+</script>
+</head>
+<body>
+<p><a href="./">Open the program</a></p>
+</body>
+</html>
