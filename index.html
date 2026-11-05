@@ -545,11 +545,12 @@ function addDays(s,n){var d=parse(s);d.setDate(d.getDate()+n);return iso(d)}
 function diff(a,b){return Math.round((parse(b)-parse(a))/864e5)}
 function fmt(s,o){return parse(s).toLocaleDateString(lang==='gu'?'gu-IN-u-nu-gujr':'en-GB',o||{weekday:'short',day:'numeric',month:'short'})}
 function short(s){if(lang==='gu'&&GS[s.id])return GS[s.id];return s.name.replace(' Das Swami','').replace(' Dasji','').replace(' Das','')}
-function sName(id){var s=state.saints.find(function(x){return x.id===id});return s?(lang==='gu'&&GN[id]?GN[id]:s.name):''}
+function sName(id){if(id&&id.charAt(0)==='~')return id.slice(1);var s=state.saints.find(function(x){return x.id===id});return s?(lang==='gu'&&GN[id]?GN[id]:s.name):''}
 var GCOL=['#7a4fa3','#2f7d6b','#b0603a','#3a6ea5','#8a7a1e','#a23b72','#4c8c2b','#c05a5a','#4b5d8a'];
 function gcol(id){var n=0;for(var i=0;i<id.length;i++)n=(n*31+id.charCodeAt(i))%9973;return GCOL[n%GCOL.length]}
 function av(id,extra){return avFor(state.saints.find(function(x){return x.id===id}),id,extra)}
-function avFor(s,id,extra){var sp=h('span',{class:'av '+id+(s&&s.photo?' ph':'')+(extra||''),style:s&&(s.guest||['g','hs','mm','hp','np','ap'].indexOf(id)<0)?'background:'+gcol(id):null,title:s?s.name:'',text:s?s.short:'?'});
+function avFor(s,id,extra){if(!s&&id&&id.charAt(0)==='~'){var tn=id.slice(1);return h('span',{class:'av tmp'+(extra||''),style:'background:#7a6a58',title:tn,text:initialsOf(tn)})}
+ var sp=h('span',{class:'av '+id+(s&&s.photo?' ph':'')+(extra||''),style:s&&(s.guest||['g','hs','mm','hp','np','ap'].indexOf(id)<0)?'background:'+gcol(id):null,title:s?s.name:'',text:s?s.short:'?'});
  if(s&&s.photo){var im=pimg(s.photo,{alt:'',style:'position:absolute;inset:0;width:100%;height:100%;object-fit:cover'});im.addEventListener('error',function(){im.remove()});sp.append(im)}
  return sp}
 function stayFor(d){var m=null;state.stays.forEach(function(s){if(s.start<=d&&d<=s.end)m=s});return m}
@@ -761,7 +762,7 @@ function openTour(t){
   h('div',{class:'row',style:'align-items:center;gap:10px'},isNew?null:delBtn,h('h2',{style:'margin:0',text:isNew?'Add tour':'Edit tour'})),
   field('name','Tour name','text',q.name),
   h('div',{class:'two'},field('start','Start date','date',q.start),field('end','End date','date',q.end)),
-  h('div',{class:'f'},h('span',{class:'lab',text:T('Saints')}),h('p',{class:'note',style:'margin:0',text:'Tick the saints on this tour. Saints marked as guests appear in the forms only on this tour\u2019s dates.'}),checks,plusBtn(function(){addSaintInline(function(sa){var l=chk(sa);l.querySelector('input').checked=true;checks.append(l);checks.dispatchEvent(new Event('change'))},false,haveIn(checks))})),
+  h('div',{class:'f'},h('span',{class:'lab',text:T('Saints')}),h('p',{class:'note',style:'margin:0',text:'Tick the saints on this tour. Saints marked as guests appear in the forms only on this tour\u2019s dates.'}),checks),
   h('div',{class:'f'},h('span',{class:'lab',text:'Vakta list'}),h('p',{class:'note',style:'margin:0',text:'Tick who can be chosen as Vakta during this tour. Only these saints appear in the Vakta selection on the tour dates.'}),vchecks),
   offField('mahant','Mahant'),offField('bhandari','Bhandari'),offField('kothari','Kothari'),
   h('div',{class:'f'},h('span',{class:'lab',text:'Kriya'}),h('p',{class:'note',style:'margin:0',text:'Write what each saint will do on this tour. Anything you like, such as a to-do list.'}),kBox),
@@ -1049,11 +1050,13 @@ function openForm(ev){
  function vplus(k){return plusBtn(function(){addSaintInline(function(sa){['vakta','kvakta'].forEach(function(kk){var el=F[kk];if(el&&![].slice.call(el.options).some(function(o){return o.value===sa.id}))el.append(h('option',{value:sa.id,text:sa.name}))});F[k].value=sa.id},true,haveIn(F[k]))})}
  function sel(opts,val){var s=h('select',{});opts.forEach(function(o){var op=h('option',{value:o[0],text:o[1]});if(o[0]===val)op.selected=true;s.append(op)});return s}
  var saintOpts=[['','Not chosen']].concat(vaktaList(e.vakta,e.date).map(function(s){return[s.id,s.name]}));
+ if(e.vakta&&e.vakta.charAt(0)==='~')saintOpts.push([e.vakta,e.vakta.slice(1)]);
  var typeSel=sel(Object.keys(TYPES).map(function(k){return[k,TYPES[k]]}),e.type);
  var groups={};
  var pkindSel=sel([['one','Single session'],['panchah','Panchah Parayan (5 days)'],['saptah','Saptah Parayan (7 days)']],'one');
  function grp(name,kids){var g=h('div',{style:'display:flex;flex-direction:column;gap:12px'},kids);groups[name]=g;return g}
  var checks=h('div',{class:'checks'},saintsOn(e.date).concat(state.saints.filter(function(s){return s.guest&&e.saints.indexOf(s.id)>-1&&saintsOn(e.date).indexOf(s)<0})).map(function(s){var c=h('input',{type:'checkbox',value:s.id});c.checked=e.saints.indexOf(s.id)>-1;return h('label',{},c,av(s.id),short(s))}));
+ e.saints.filter(function(i){return i.charAt(0)==='~'}).forEach(function(i){var c=h('input',{type:'checkbox',value:i});c.checked=true;checks.append(h('label',{},c,av(i),i.slice(1)))});
  e.photos=e.photos||[];
  var thumbs=h('div',{class:'thumbs'}),pstat=h('span',{class:'note'});
  function drawThumbs(){thumbs.textContent='';e.photos.forEach(function(p,i){thumbs.append(h('div',{class:'th'},pimg(p.id,{alt:''}),h('button',{type:'button',class:'x','aria-label':'Remove picture',onclick:function(){e.photos.splice(i,1);drawThumbs()}},'×')))})}
@@ -1162,7 +1165,7 @@ function openWhole(title,place){
 function openSeries(title,place){
  var list=seriesOf({title:title,place:place});if(!list.length)return;
  var modal=h('div',{class:'modal',role:'dialog','aria-modal':'true','aria-label':'Vakta and part of Shastra'}),rows=[];
- function vsel(val){var opts=[['','Not chosen']].concat(vaktaList(val,list[0].date).map(function(s){return[s.id,s.name]}));var s=h('select',{});opts.forEach(function(o){var op=h('option',{value:o[0],text:o[1]});if(o[0]===val)op.selected=true;s.append(op)});return s}
+ function vsel(val){var opts=[['','Not chosen']].concat(vaktaList(val,list[0].date).map(function(s){return[s.id,s.name]}));if(val&&val.charAt(0)==='~')opts.push([val,val.slice(1)]);var s=h('select',{});opts.forEach(function(o){var op=h('option',{value:o[0],text:o[1]});if(o[0]===val)op.selected=true;s.append(op)});return s}
  var all=vsel('');
  var allBtn=h('button',{class:'btn sm',type:'button',onclick:function(){if(!all.value)return;rows.forEach(function(r){r.v.value=all.value})}},'Apply to all');
  var form=h('form',{class:'form',onsubmit:function(x){x.preventDefault();
@@ -1211,21 +1214,18 @@ function addSaintInline(cb,asVakta,have){
  have=have||function(){return false};
  var inStyle='padding:9px;border:1px solid var(--line);border-radius:10px;background:var(--surface)';
  var modal=h('div',{class:'modal',role:'dialog','aria-modal':'true','aria-label':'Add another saint',style:'z-index:40'});
- var nameIn=h('input',{type:'text',placeholder:'New saint name, e.g. Nandkishor Dasji',autocomplete:'off',style:inStyle});
- var vk=h('input',{type:'checkbox',checked:true});
+ var nameIn=h('input',{type:'text',placeholder:'Any name, e.g. a guest or a driver',autocomplete:'off',style:inStyle});
  var others=state.saints.filter(function(x){return !have(x.id)});
  function pick(x){return function(){modal.remove();cb(x)}}
  var list=others.length?h('div',{class:'f'},h('label',{text:'Choose from your saints'}),h('div',{style:'display:flex;flex-direction:column;gap:6px;max-height:36vh;overflow:auto'},others.map(function(x){return h('button',{class:'chip',type:'button',onclick:pick(x)},av(x.id),x.name)}))):null;
  var form=h('form',{class:'form',onsubmit:function(e){e.preventDefault();var nm=nameIn.value.trim();if(!nm){nameIn.focus();return}
-  var sa={id:'x_'+slugify(nm).replace(/-/g,'')+Date.now().toString(36).slice(-3),name:nm,role:(asVakta||vk.checked)?'Vakta':'',guest:true,short:initialsOf(nm)};
-  state.saints.push(sa);ui.dirty++;modal.remove();cb(sa)}},
+  modal.remove();cb({id:'~'+nm,name:nm,short:initialsOf(nm),role:'Vakta',tmp:true})}},
   h('div',{class:'row',style:'justify-content:space-between;align-items:center'},h('h2',{style:'margin:0',text:'Add another saint'}),h('button',{class:'btn sm',type:'button','aria-label':'Close',onclick:function(){modal.remove()}},'×')),
-  list,
-  h('div',{class:'f'},h('label',{text:others.length?'Or add a new saint':'New saint'}),nameIn),
-  asVakta?null:h('label',{style:'display:flex;gap:8px;align-items:center;font-size:13px'},vk,'Can be chosen as Vakta'),
-  h('p',{class:'note',style:'margin:0',text:'A new saint is added to your saints list for everyone. Press Save and publish to keep it.'}),
-  h('div',{class:'row'},h('button',{class:'btn pri',type:'submit'},'Add new saint'),h('button',{class:'btn',type:'button',onclick:function(){modal.remove()}},'Cancel')));
- modal.append(form);document.body.append(modal);backable(modal)}
+  h('div',{class:'f'},h('label',{text:'Type any name (temporary)'}),nameIn),
+  h('p',{class:'note',style:'margin:0',text:'Used only here. It is not added to your list of saints.'}),
+  h('div',{class:'row'},h('button',{class:'btn pri',type:'submit'},'Use this name'),h('button',{class:'btn',type:'button',onclick:function(){modal.remove()}},'Cancel')),
+  list);
+ modal.append(form);document.body.append(modal);backable(modal);setTimeout(function(){try{nameIn.focus()}catch(x){}},0)}
 var ME='mm';
 function meBadge(){return h('span',{style:'font-size:10px;font-weight:700;padding:1px 6px;border-radius:999px;background:var(--accent);color:#fff;margin-left:4px;align-self:center',text:'me'})}
 function orderedSaints(){var me=state.saints.filter(function(s){return s.id===ME}),rest=state.saints.filter(function(s){return s.id!==ME});return me.concat(rest)}
