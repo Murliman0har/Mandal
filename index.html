@@ -1184,6 +1184,19 @@ function openSeries(title,place){
  modal.append(form);document.body.append(modal);backable(modal)}
 
 function shrinkSq(file,n){return new Promise(function(res,rej){var img=new Image(),u=URL.createObjectURL(file);img.onload=function(){var m=Math.min(img.width,img.height),c=document.createElement('canvas');c.width=c.height=n;c.getContext('2d').drawImage(img,(img.width-m)/2,(img.height-m)/2,m,m,0,0,n,n);URL.revokeObjectURL(u);c.toBlob(function(b){b?res(b):rej()},'image/jpeg',.85)};img.onerror=function(){URL.revokeObjectURL(u);rej()};img.src=u})}
+function deleteSaint(sa){
+ if(sa.id===ME){alert('This is you, so it cannot be deleted.');return Promise.resolve(false)}
+ var used=state.events.filter(function(e){return (e.saints||[]).indexOf(sa.id)>-1||e.vakta===sa.id}).length;
+ var tours=(state.tours||[]).filter(function(t){return (t.saints||[]).indexOf(sa.id)>-1}).length;
+ var msg='Delete '+sa.name+'?\n\nThey will be removed from '+used+' event'+(used===1?'':'s')+' and '+tours+' tour'+(tours===1?'':'s')+', and their link will stop working. This cannot be undone.';
+ if(!confirm(msg))return Promise.resolve(false);
+ var id=sa.id,pass=getPass();
+ state.saints=state.saints.filter(function(x){return x.id!==id});
+ (state.tours||[]).forEach(function(t){t.saints=(t.saints||[]).filter(function(i){return i!==id});if(t.vaktas)t.vaktas=t.vaktas.filter(function(i){return i!==id});['mahant','bhandari','kothari'].forEach(function(k){if(t[k]===id)t[k]=''});if(t.kriya)delete t.kriya[id]});
+ state.events.forEach(function(e){if(e.saints)e.saints=e.saints.filter(function(i){return i!==id});if(e.vakta===id)e.vakta=''});
+ ui.sel=ui.sel.filter(function(i){return i!==id});saveSel();
+ ui.dirty++;save();
+ return rpc('admin_list_guests',{p_passcode:pass}).then(function(r){var g=(r||[]).filter(function(x){return x.saint_id===id})[0];return g?rpc('admin_delete_guest',{p_passcode:pass,p_id:g.id}):null}).catch(function(){}).then(function(){return true})}
 function openSaintEdit(s,done){
  var draft={photo:s.photo||''},msg='',busy=false;
  var inStyle='padding:9px;border:1px solid var(--line);border-radius:10px;background:var(--surface)';
@@ -1208,7 +1221,7 @@ function openSaintEdit(s,done){
   prev,file,note,
   h('div',{class:'f'},h('label',{text:'Name'}),nameIn),
   h('div',{class:'f'},h('label',{text:'Initials (shown when there is no photo)'}),shortIn),
-  h('div',{class:'row'},h('button',{class:'btn pri',type:'submit'},'Save'),h('button',{class:'btn',type:'button',onclick:function(){modal.remove()}},'Cancel')));
+  h('div',{class:'row'},h('button',{class:'btn pri',type:'submit'},'Save'),h('button',{class:'btn',type:'button',onclick:function(){modal.remove()}},'Cancel'),s.id===ME?null:h('button',{class:'btn danger',type:'button',style:'margin-left:auto',onclick:function(){deleteSaint(s).then(function(ok){if(ok){modal.remove();if(done)done()}})}},'Delete saint')));
  drawPrev();modal.append(form);document.body.append(modal);backable(modal)}
 function initialsOf(nm){var w=nm.split(/\s+/).filter(Boolean);return ((w[0]||'?').charAt(0)+(w[1]?w[1].charAt(0):(w[0]||'??').charAt(1))).toUpperCase()}
 function plusBtn(fn){return h('button',{class:'btn sm',type:'button',title:'Add another saint','aria-label':'Add another saint',style:'align-self:flex-start;font-weight:700',onclick:fn},'+ Saint')}
@@ -1282,14 +1295,14 @@ function openAdmin(){
    h('div',{class:'row',style:'flex-wrap:nowrap'},s?av(s.id):null,h('span',{style:'font-weight:700',text:(s?s.name:g.name)+(g.blocked?'  (blocked)':'')}),s&&s.id===ME?meBadge():null),
    h('div',{class:'faint',style:'word-break:break-all',text:link}),
    h('div',{class:'faint',text:seenTxt(g.last_seen)+' · '+g.visits+(g.visits===1?' visit':' visits')}),
-   h('div',{class:'row'},cp,rs,s?h('button',{class:'btn sm',type:'button',onclick:function(){openSaintEdit(s,draw)}},'Edit name & photo'):null,
+   h('div',{class:'row'},cp,rs,s?h('button',{class:'btn sm',type:'button',onclick:function(){openSaintEdit(s,load)}},'Edit name & photo'):null,
     h('button',{class:'btn sm',type:'button',onclick:function(){act('admin_update_guest',{p_passcode:pass,p_id:g.id,p_blocked:!g.blocked,p_role:null})}},g.blocked?'Unblock':'Block'),
     h('button',{class:'btn sm danger',type:'button',onclick:function(){if(confirm('Remove the link for '+g.name+'? It will stop working.'))act('admin_delete_guest',{p_passcode:pass,p_id:g.id})}},'Delete link')))}
  function nolink(s){
   return h('div',{style:'border-top:1px solid var(--line);padding-top:10px;display:flex;flex-direction:column;gap:6px'},
    h('div',{class:'row',style:'flex-wrap:nowrap'},av(s.id),h('span',{style:'font-weight:700',text:s.name}),s.id===ME?meBadge():null),
    h('div',{class:'faint',text:'No link yet'}),
-   h('div',{class:'row'},h('button',{class:'btn sm',type:'button',onclick:function(){makeOne(s)}},'Make link'),h('button',{class:'btn sm',type:'button',onclick:function(){openSaintEdit(s,draw)}},'Edit name & photo')))}
+   h('div',{class:'row'},h('button',{class:'btn sm',type:'button',onclick:function(){makeOne(s)}},'Make link'),h('button',{class:'btn sm',type:'button',onclick:function(){openSaintEdit(s,load)}},'Edit name & photo')))}
  function put(){[].slice.call(arguments).forEach(function(c){if(Array.isArray(c))c.forEach(function(x){if(x)body.append(x)});else if(c)body.append(c)})}
  function draw(){body.textContent='';
   var byS={};list.forEach(function(g){if(g.saint_id)byS[g.saint_id]=g});
