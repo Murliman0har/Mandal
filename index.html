@@ -149,6 +149,7 @@ button{cursor:pointer}
 .av.g{background:var(--s-g)}.av.hs{background:var(--s-hs)}.av.mm{background:var(--s-mm)}.av.hp{background:var(--s-hp)}.av.np{background:var(--s-np)}.av.ap{background:var(--s-ap)}
 .av.all{background:var(--fg);color:var(--bg)}
 .av.ph{position:relative;overflow:hidden}
+.ev[data-eid]{-webkit-touch-callout:none}
 .ev{display:grid;grid-template-columns:92px minmax(0,1fr);background:var(--surface);border:1px solid var(--line);border-radius:14px;overflow:hidden}
 .ev.now{border-color:var(--c);box-shadow:0 0 0 2px var(--c)}
 @keyframes nowpulse{0%{box-shadow:0 0 0 2px var(--c),0 0 0 2px color-mix(in srgb,var(--c) 55%,transparent)}70%{box-shadow:0 0 0 2px var(--c),0 0 0 12px color-mix(in srgb,var(--c) 0%,transparent)}100%{box-shadow:0 0 0 2px var(--c),0 0 0 2px color-mix(in srgb,var(--c) 0%,transparent)}}
@@ -609,7 +610,7 @@ function evCard(e,isNow,isNext){
  if(e.notes)kv.push(h('dt',{text:T('Notes')}),h('dd',{class:'wrapok',text:tr(e.notes)}));
  var allIds=saintsOn(e.date).map(function(s){return s.id});
  var everyone=allIds.every(function(i){return e.saints.indexOf(i)>-1});
- return h('article',{class:'ev t-'+e.type+(isNow?' now':'')},
+ return h('article',{class:'ev t-'+e.type+(isNow?' now':''),'data-eid':e.id},
   STK[e.type]?h('img',{class:'ksticker k-'+e.type+(isNow?' now':''),src:STK[e.type],alt:'','aria-hidden':'true',loading:'lazy'}):null,
   isNow?fxEls(e.type):null,
   h('div',{class:'rail'+(isNow?' prog':'')},isNow?h('i',{class:'fill',style:'width:'+nowPct(e)+'%'}):null,h('b',{text:tl[0]}),tl[1]?h('span',{text:tl[1]}):null,h('span',{class:'rtag',text:typeLabel(e.type)}),e.type==='rest'?h('span',{class:'moon','aria-hidden':'true'}):null,e.type==='pravachan'?h('span',{class:'mtag',text:'⏱ '+dg(durOf(e))+(lang==='gu'?' મિનિટ':' min')}):null,isNow?h('span',{class:'pill now',text:lang==='gu'?'ચાલુ':'ON'}):null),
@@ -1403,6 +1404,33 @@ if('serviceWorker' in navigator&&/^https?:/.test(location.protocol)){window.addE
   ui.date=nd;render();window.scrollTo(0,0);
   try{if(!(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches)){var el=document.querySelector('.wrap-in');if(el&&el.animate)el.animate([{transform:'translateX('+(next?36:-36)+'px)',opacity:.35},{transform:'none',opacity:1}],{duration:220,easing:'ease-out'})}}catch(x){}
  },{passive:true});
+})();
+function showEventSaints(id){
+ if(document.querySelector('.modal.who'))return;
+ var e=state.events.find(function(x){return x.id===id});if(!e)return;
+ var gu=lang==='gu',ids=(e.saints||[]).slice();
+ if(e.vakta&&ids.indexOf(e.vakta)<0)ids.unshift(e.vakta);
+ ids.sort(function(a,b){return (b===e.vakta)-(a===e.vakta)});
+ var modal=h('div',{class:'modal who',role:'dialog','aria-modal':'true','aria-label':gu?'આ કાર્યક્રમમાં સંતો':'Saints in this event',onclick:function(ev){if(ev.target===modal)modal.remove()}});
+ var rows=ids.length?ids.map(function(i){return h('div',{class:'srow'},av(i),h('span',{style:'flex:1;font-weight:600',text:sName(i)||i}),i===e.vakta?h('span',{class:'faint',text:gu?'વક્તા':'Vakta'}):null)}):[h('p',{class:'note',style:'margin:0',text:gu?'કોઈ સંત પસંદ કર્યા નથી.':'No saints chosen for this event.'})];
+ var form=h('div',{class:'form'},
+  h('div',{class:'row',style:'justify-content:space-between;align-items:center;flex-wrap:nowrap'},h('h2',{style:'margin:0',text:tr(e.title)||typeLabel(e.type)}),h('button',{class:'btn sm',type:'button','aria-label':'Close',onclick:function(){modal.remove()}},'×')),
+  h('p',{class:'note',style:'margin:0',text:(gu?'આ કાર્યક્રમમાં સંતો':'Saints in this event')+' ('+dg(ids.length)+')'}),
+  rows);
+ modal.append(form);document.body.append(modal);backable(modal);try{navigator.vibrate&&navigator.vibrate(15)}catch(x){}}
+(function(){var t=null,sx=0,sy=0,last=0;
+ function cancel(){if(t){clearTimeout(t);t=null}}
+ function target(ev){var n=ev.target;if(!n||!n.closest||!ui.authed)return null;if(n.closest('button,a,input,select,textarea,.modal,.drawer'))return null;var el=n.closest('.ev[data-eid]');return el?el.getAttribute('data-eid'):null}
+ function start(ev,x,y){cancel();var id=target(ev);if(!id)return;sx=x;sy=y;t=setTimeout(function(){t=null;last=Date.now();showEventSaints(id)},500)}
+ function move(x,y){if(t&&(Math.abs(x-sx)>10||Math.abs(y-sy)>10))cancel()}
+ document.addEventListener('touchstart',function(ev){if(ev.touches.length!==1){cancel();return}start(ev,ev.touches[0].clientX,ev.touches[0].clientY)},{passive:true});
+ document.addEventListener('touchmove',function(ev){var q=ev.touches[0];if(q)move(q.clientX,q.clientY)},{passive:true});
+ document.addEventListener('touchend',cancel,{passive:true});document.addEventListener('touchcancel',cancel,{passive:true});
+ document.addEventListener('mousedown',function(ev){if(ev.button===0)start(ev,ev.clientX,ev.clientY)});
+ document.addEventListener('mousemove',function(ev){move(ev.clientX,ev.clientY)});
+ document.addEventListener('mouseup',cancel);
+ document.addEventListener('scroll',cancel,true);
+ document.addEventListener('contextmenu',function(ev){var id=target(ev);if(!id)return;ev.preventDefault();cancel();if(Date.now()-last>900){last=Date.now();showEventSaints(id)}});
 })();
 setInterval(function(){if(ui.authed&&ui.view==='day'&&ui.date===today()&&!document.querySelector('.modal'))render()},60000);
 })();
