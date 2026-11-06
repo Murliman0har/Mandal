@@ -608,8 +608,6 @@ function evCard(e,isNow,isNext){
  if(e.type==='flight'){add('Flight',e.flight)}
  if(YAJ.indexOf(e.type)>-1)add('Yajman',e.yajman);
  if(e.notes)kv.push(h('dt',{text:T('Notes')}),h('dd',{class:'wrapok',text:tr(e.notes)}));
- var allIds=saintsOn(e.date).map(function(s){return s.id});
- var everyone=allIds.every(function(i){return e.saints.indexOf(i)>-1});
  return h('article',{class:'ev t-'+e.type+(isNow?' now':''),'data-eid':e.id},
   STK[e.type]?h('img',{class:'ksticker k-'+e.type+(isNow?' now':''),src:STK[e.type],alt:'','aria-hidden':'true',loading:'lazy'}):null,
   isNow?fxEls(e.type):null,
@@ -621,7 +619,6 @@ function evCard(e,isNow,isNext){
    e.type==='flight'?flightLine(e,isNow):null,
    kv.length?h('dl',{class:'kv'},kv):null,
    e.photos&&e.photos.length?picsEl(e):null,
-   (!everyone&&e.saints.length)?h('div',{class:'row'},e.saints.map(function(i){return h('span',{class:'row'},av(i),h('span',{class:'faint',text:sName(i)}))})):null,
    ui.canEdit?h('div',{class:'row'},h('button',{class:'btn sm',type:'button',onclick:function(){openForm(e)}},'Edit'),(e.type==='parayan'&&seriesOf(e).length>1)?h('button',{class:'btn sm',type:'button',onclick:function(){openSeries(e.title,e.place)}},'Vakta & part for all sessions'):null):null));
 }
 var mstack=[],skipPop=0;
