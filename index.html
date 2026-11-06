@@ -603,7 +603,7 @@ function evCard(e,isNow,isNext){
   call.innerHTML='<svg viewBox="0 0 24 24" width="21" height="21" aria-hidden="true"><path d="M6.6 10.8c1.4 2.8 3.8 5.1 6.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2 1.1.4 2.3.6 3.6.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1C10.6 21 3 13.4 3 4c0-.6.4-1 1-1h3.5c.6 0 1 .4 1 1 0 1.3.2 2.5.6 3.6.1.3 0 .7-.2 1l-2.3 2.2z" fill="#1E8E3E"/></svg>'}
  var corner=(pin||call)?h('div',{class:'cornerbtns'},call,pin):null;
  if(e.type==='parayan'){add('Vakta',sName(e.vakta));add('Portion',e.portion)}
- if(e.type==='katha')add('Vakta',sName(e.vakta));
+ if(e.type==='katha'||e.type==='vastu')add('Vakta',sName(e.vakta));
  
  if(e.type==='flight'){add('Flight',e.flight)}
  if(YAJ.indexOf(e.type)>-1)add('Yajman',e.yajman);
@@ -829,7 +829,7 @@ function sumView(){
  root.append(h('div',{class:'tiles',id:'sumTiles'},SUMORDER.map(function(k){return h('button',{class:'tile t-'+k,type:'button','aria-expanded':ui.sumOpen===k?'true':'false',onclick:function(){ui.sumOpen=ui.sumOpen===k?'':k;render();if(ui.sumOpen)setTimeout(function(){var el=document.getElementById('sumDetail');if(el)el.scrollIntoView({behavior:'smooth',block:'start'})},40)}},h('b',{text:dg(count(k))}),h('span',{text:typeLabel(k)}),h('small',{text:sub(k)||' '}))})));
  if(ui.sumOpen){var k=ui.sumOpen,rows=[];
   if(k==='parayan')sers.forEach(function(o){rows.push(h('button',{class:'li',type:'button',onclick:function(){goDay(o.date)}},h('span',{class:'a',text:tr(o.title)+' · '+tr(o.place)}),h('span',{class:'b',text:dg(o.n)+' '+T('sessions')}),h('span',{class:'b',text:fmt(o.date)+' – '+fmt(o.end)}),h('span')))});
-  else if(k!=='katha')by[k].forEach(function(e){rows.push(h('button',{class:'li',type:'button',onclick:function(){goDay(e.date)}},h('span',{class:'a',text:(tr(e.title)||typeLabel(k))+((k==='katha'&&e.vakta)?' · '+sName(e.vakta):'')}),h('span',{class:'b',text:rangeLabel(e)}),h('span',{class:'b',text:tr(e.place)}),h('span')))});
+  else if(k!=='katha')by[k].forEach(function(e){rows.push(h('button',{class:'li',type:'button',onclick:function(){goDay(e.date)}},h('span',{class:'a',text:(tr(e.title)||typeLabel(k))+(((k==='katha'||k==='vastu')&&e.vakta)?' · '+sName(e.vakta):'')}),h('span',{class:'b',text:rangeLabel(e)}),h('span',{class:'b',text:tr(e.place)}),h('span')))});
   if(k==='parayan'){var pc={};by.parayan.forEach(function(e){pc[e.vakta||'']=(pc[e.vakta||'']||0)+1});
    var pr=Object.keys(pc).filter(Boolean).sort(function(x,y){return pc[y]-pc[x]}).map(function(id){return h('div',{class:'fill'},h('span',{text:sName(id)}),h('b',{text:dg(pc[id])+' '+T(pc[id]===1?'session':'sessions')}))});
    if(pc[''])pr.push(h('div',{class:'fill'},h('span',{text:T('Vakta not chosen')}),h('b',{text:dg(pc[''])+' '+T(pc['']===1?'session':'sessions')})));
@@ -1114,7 +1114,7 @@ function openForm(ev){
  function wrap(el){return el.parentNode}
  function isSer(){return isNew&&typeSel.value==='parayan'&&pkindSel.value!=='one'}
  function sync2(){sync();var t=typeSel.value,ser=isSer();
-  var pv=t==='pravachan';groups.kat.hidden=t!=='katha';groups.prv.hidden=!pv;groups.pk.hidden=!(isNew&&t==='parayan');groups.ser.hidden=!ser;
+  var pv=t==='pravachan';groups.kat.hidden=t!=='katha'&&t!=='vastu';groups.prv.hidden=!pv;groups.pk.hidden=!(isNew&&t==='parayan');groups.ser.hidden=!ser;
   wrap(F.end).hidden=pv;wrap(F.place).hidden=pv;wrap(F.notes).hidden=pv;pics.hidden=pv;
   var car=t==='car';wrap(F.title).hidden=car;wrap(F.endDate).hidden=ser||pv||car;wrap(F.start).parentNode.hidden=ser;wrap(F.session).hidden=ser;wrap(F.vakta).hidden=ser;wrap(F.portion).hidden=ser;
   var dl=wrap(F.date).querySelector('label');if(dl)dl.textContent=ser?'Start date':T('Date')}
@@ -1125,7 +1125,7 @@ function openForm(ev){
   e.start=F.start.value;e.end=F.end.value;e.place=F.place.value.trim();e.notes=F.notes.value.trim();
   e.saints=[].slice.call(checks.querySelectorAll('input')).filter(function(c){return c.checked}).map(function(c){return c.value});
   e.cars=(RIDE.indexOf(typeSel.value)<0||typeSel.value==='pravachan')?[]:(e.cars||[]).map(function(c){return {driver:(c.driver||'').trim(),saints:c.saints.filter(function(i){return e.saints.indexOf(i)>-1})}}).filter(function(c){return c.driver||c.saints.length});
-  e.session=F.session.value;e.vakta=F.vakta.value;if(t==='katha')e.vakta=F.kvakta.value;e.shastra=F.shastra.value.trim();e.portion=F.portion.value.trim();
+  e.session=F.session.value;e.vakta=F.vakta.value;if(t==='katha'||t==='vastu')e.vakta=F.kvakta.value;e.shastra=F.shastra.value.trim();e.portion=F.portion.value.trim();
   e.yajman=F.yajman.value.trim();e.driver=F.driver.value.trim();e.phone=F.phone.value.trim();e.flight=F.flight.value.trim();
   if(t==='car'){e.from=F.from.value.trim();e.to=F.to.value.trim();e.title=route(e);e.endDate=''}else if(t==='flight'){e.from=F.from2.value.trim();e.to=F.to2.value.trim()}
   if(!e.date){F.date.focus();return}
