@@ -740,24 +740,26 @@ function openTour(t){
  var checks=h('div',{class:'checks'},state.saints.map(chk));
  function vchk(s){var c=h('input',{type:'checkbox',value:s.id});c.checked=q.vaktas.indexOf(s.id)>-1;return h('label',{},c,av(s.id),short(s))}
  var vchecks=h('div',{class:'checks'});
- function ticked(){return [].slice.call(checks.querySelectorAll('input')).filter(function(c){return c.checked}).map(function(c){return c.value})}
+ function ticked(){return [].slice.call(checks.querySelectorAll('input')).filter(function(c){return c.checked}).map(function(c){return c.value}).concat((q.tmp||[]).map(function(n){return '~'+n}))}
+ function pplOf(ids){var out=[];ids.forEach(function(i){var s=state.saints.find(function(x){return x.id===i});if(s)out.push(s);else if(i.charAt(0)==='~')out.push({id:i,name:i.slice(1)})});return out}
  function fillV(){var keep={};[].slice.call(vchecks.querySelectorAll('input')).forEach(function(c){if(c.checked)keep[c.value]=1});var first=!vchecks.firstChild;
   vchecks.textContent='';var ids=ticked();
   if(!ids.length)vchecks.append(h('span',{class:'note',text:'Tick saints above first.'}));
-  state.saints.filter(function(x){return ids.indexOf(x.id)>-1}).forEach(function(sa){var c=h('input',{type:'checkbox',value:sa.id});c.checked=first?q.vaktas.indexOf(sa.id)>-1:!!keep[sa.id];vchecks.append(h('label',{},c,av(sa.id),short(sa)))})}
+  pplOf(ids).forEach(function(sa){var c=h('input',{type:'checkbox',value:sa.id});c.checked=first?q.vaktas.indexOf(sa.id)>-1:!!keep[sa.id];vchecks.append(h('label',{},c,av(sa.id),short(sa)))})}
  var offSel={},kBox=h('div',{style:'display:flex;flex-direction:column;gap:8px'}),kIn={};q.kriya=q.kriya||{};
  function fillK(){Object.keys(kIn).forEach(function(i){q.kriya[i]=kIn[i].value});kIn={};kBox.textContent='';var ids=ticked();
   if(!ids.length)kBox.append(h('span',{class:'note',text:'Tick saints above first.'}));
-  state.saints.filter(function(x){return ids.indexOf(x.id)>-1}).forEach(function(sa){var i=sa.id,inp=h('textarea',{rows:'2',placeholder:'Kriya: what they will do, to-do list...',style:'width:100%;box-sizing:border-box;min-width:0'});inp.value=q.kriya[i]||'';kIn[i]=inp;kBox.append(h('div',{style:'display:grid;grid-template-columns:minmax(80px,34%) 1fr;gap:8px 12px;align-items:start'},h('span',{class:'row',style:'align-items:center;gap:8px'},av(i),h('span',{text:sName(i)})),inp))})}
+  pplOf(ids).forEach(function(sa){var i=sa.id,inp=h('textarea',{rows:'2',placeholder:'Kriya: what they will do, to-do list...',style:'width:100%;box-sizing:border-box;min-width:0'});inp.value=q.kriya[i]||'';kIn[i]=inp;kBox.append(h('div',{style:'display:grid;grid-template-columns:minmax(80px,34%) 1fr;gap:8px 12px;align-items:start'},h('span',{class:'row',style:'align-items:center;gap:8px'},av(i),h('span',{text:sName(i)})),inp))})}
  function offField(id,label){var el=h('select',{id:'tf_'+id});offSel[id]=el;F[id]=el;return h('div',{class:'f'},h('label',{for:'tf_'+id,text:label}),el)}
  function fillOff(){var ids=ticked();['mahant','bhandari','kothari'].forEach(function(k){var el=offSel[k],cur=el.value||q[k]||'';el.textContent='';el.append(h('option',{value:'',text:'Not chosen'}));
-  ids.forEach(function(i){var sa=state.saints.find(function(x){return x.id===i});if(sa){var op=h('option',{value:i,text:sa.name});if(i===cur)op.selected=true;el.append(op)}});
+  ids.forEach(function(i){var sa=pplOf([i])[0];if(sa){var op=h('option',{value:i,text:sa.name});if(i===cur)op.selected=true;el.append(op)}});
   if(cur&&ids.indexOf(cur)<0&&!state.saints.some(function(x){return x.id===cur})){var op=h('option',{value:cur,text:cur});op.selected=true;el.append(op)}})}
  q.tmp=q.tmp||[];
  var tmpBox=h('div',{style:'display:flex;flex-wrap:wrap;gap:6px'});
- function drawTmp(){tmpBox.textContent='';q.tmp.forEach(function(n,i){tmpBox.append(h('span',{class:'chip hl',style:'gap:6px;cursor:default'},av('~'+n),n,h('button',{type:'button','aria-label':'Remove '+n,class:'btn sm',style:'padding:0 7px',onclick:function(){q.tmp.splice(i,1);drawTmp()}},'×')))});if(!q.tmp.length)tmpBox.append(h('span',{class:'note',text:'None yet.'}))}
+ var ready=false;
+ function drawTmp(){tmpBox.textContent='';q.tmp.forEach(function(n,i){tmpBox.append(h('span',{class:'chip hl',style:'gap:6px;cursor:default'},av('~'+n),n,h('button',{type:'button','aria-label':'Remove '+n,class:'btn sm',style:'padding:0 7px',onclick:function(){q.tmp.splice(i,1);drawTmp();if(ready){fillV();fillOff();fillK()}}},'×')))});if(!q.tmp.length)tmpBox.append(h('span',{class:'note',text:'None yet.'}))}
  var tmpIn=h('input',{type:'text',placeholder:'Name, e.g. a guest or a driver',autocomplete:'off',style:'flex:1;min-width:0'});
- function addTmp(){var n=tmpIn.value.trim();if(!n)return;if(q.tmp.indexOf(n)<0)q.tmp.push(n);tmpIn.value='';drawTmp()}
+ function addTmp(){var n=tmpIn.value.trim();if(!n)return;if(q.tmp.indexOf(n)<0)q.tmp.push(n);tmpIn.value='';drawTmp();if(ready){fillV();fillOff();fillK()}}
  tmpIn.addEventListener('keydown',function(ev){if(ev.key==='Enter'){ev.preventDefault();addTmp()}});
  drawTmp();
  var modal=h('div',{class:'modal',role:'dialog','aria-modal':'true','aria-label':isNew?'Add tour':'Edit tour'});
@@ -780,7 +782,7 @@ function openTour(t){
   offField('mahant','Mahant'),offField('bhandari','Bhandari'),offField('kothari','Kothari'),
   h('div',{class:'f'},h('span',{class:'lab',text:'Kriya'}),h('p',{class:'note',style:'margin:0',text:'Write what each saint will do on this tour. Anything you like, such as a to-do list.'}),kBox),
   h('div',{class:'row'},h('button',{class:'btn pri',type:'submit'},T('Done')),h('button',{class:'btn',type:'button',onclick:function(){modal.remove()}},T('Cancel'))));
- fillV();fillOff();fillK();checks.addEventListener('change',function(){fillV();fillOff();fillK()});
+ fillV();fillOff();fillK();ready=true;checks.addEventListener('change',function(){fillV();fillOff();fillK()});
  modal.append(form);document.body.append(modal);backable(modal);F.name.focus()}
 function openStay(t,s){
  var isNew=!s,last=t.stays.length?t.stays[t.stays.length-1].end:'';
@@ -1090,12 +1092,13 @@ function openForm(ev){
  var checks=h('div',{class:'checks'},saintsOn(e.date).concat(state.saints.filter(function(s){return s.guest&&e.saints.indexOf(s.id)>-1&&saintsOn(e.date).indexOf(s)<0})).map(function(s){var c=h('input',{type:'checkbox',value:s.id});c.checked=e.saints.indexOf(s.id)>-1;return h('label',{},c,av(s.id),short(s))}));
  e.saints.filter(function(i){return i.charAt(0)==='~'}).forEach(function(i){var c=h('input',{type:'checkbox',value:i});c.checked=true;checks.append(h('label',{},c,av(i),i.slice(1)))});
  var tours=(state.tours||[]).slice().sort(function(a,b){return a.start<b.start?-1:a.start>b.start?1:0});
+ ui.formTmp=[];
  function tourFor(dt){var m=tours.find(function(t){return t.start<=dt&&dt<=t.end});return m?m.id:''}
  var initTour=isNew&&curTour()?curTour().id:tourFor(e.date);
  var tourSel=sel([['',lang==='gu'?'કોઈ યાત્રા નહીં':'No tour']].concat(tours.map(function(t){return[t.id,t.name]})),initTour);
  function tIdsFor(t){var ids=[];(t.saints||[]).forEach(function(i){if(state.saints.some(function(s){return s.id===i}))ids.push(i)});(t.tmp||[]).forEach(function(n){ids.push('~'+n)});return ids}
  function applyTour(fresh){
-  var t=tours.find(function(x){return x.id===tourSel.value})||null;
+  var t=tours.find(function(x){return x.id===tourSel.value})||null;ui.formTmp=t?(t.tmp||[]).slice():[];
   var ticked=[].slice.call(checks.querySelectorAll('input')).filter(function(c){return c.checked}).map(function(c){return c.value});
   var on=fresh?(t?tIdsFor(t):saintsOn(e.date).map(function(s){return s.id})):ticked,order=[];
   function add(i){if(order.indexOf(i)<0)order.push(i)}
@@ -1296,7 +1299,7 @@ function addSaintInline(cb,asVakta,have){
  var inStyle='padding:9px;border:1px solid var(--line);border-radius:10px;background:var(--surface)';
  var modal=h('div',{class:'modal',role:'dialog','aria-modal':'true','aria-label':'Add another saint',style:'z-index:40'});
  var nameIn=h('input',{type:'text',placeholder:'Any name, e.g. a guest or a driver',autocomplete:'off',style:inStyle});
- var others=state.saints.filter(function(x){return !have(x.id)});
+ var others=state.saints.filter(function(x){return !have(x.id)}).concat((ui.formTmp||[]).filter(function(n){return !have('~'+n)}).map(function(n){return {id:'~'+n,name:n,short:initialsOf(n),role:'Vakta',tmp:true}}));
  function pick(x){return function(){modal.remove();cb(x)}}
  var list=others.length?h('div',{class:'f'},h('label',{text:'Choose from your saints'}),h('div',{style:'display:flex;flex-direction:column;gap:6px;max-height:36vh;overflow:auto'},others.map(function(x){return h('button',{class:'chip',type:'button',onclick:pick(x)},av(x.id),x.name)}))):null;
  var form=h('form',{class:'form',onsubmit:function(e){e.preventDefault();var nm=nameIn.value.trim();if(!nm){nameIn.focus();return}
