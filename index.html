@@ -557,6 +557,9 @@ function avFor(s,id,extra){if(!s&&id&&id.charAt(0)==='~'){var tn=id.slice(1);ret
  if(s&&s.photo){var im=pimg(s.photo,{alt:'',style:'position:absolute;inset:0;width:100%;height:100%;object-fit:cover'});im.addEventListener('error',function(){im.remove()});sp.append(im)}
  return sp}
 function stayFor(d){var m=null;state.stays.forEach(function(s){if(s.start<=d&&d<=s.end)m=s});return m}
+function scoped(){return Array.isArray(ui.editTours)}
+function canEditTour(t){return !scoped()||ui.editTours.indexOf(t.id)>-1}
+function canEditDate(d){if(!scoped())return true;var ts=state.tours||[],inOk=false,inOth=false;ts.forEach(function(t){var inR=t.start<=d&&d<=t.end;if(ui.editTours.indexOf(t.id)>-1){if(inR)inOk=true}else if(inR)inOth=true});return inOk&&!inOth}
 function curTour(){if(!ui.tourSel)return null;var t=(state.tours||[]).find(function(x){return x.id===ui.tourSel});if(!t)ui.tourSel='';return t||null}
 function dayAll(d){var t=curTour();if(t&&(d<t.start||d>t.end))return [];return state.events.filter(function(e){return e.date<=d&&d<=(e.endDate||e.date)})}
 function hasSel(e){return !ui.sel.length||ui.sel.some(function(id){return e.saints.indexOf(id)>-1})}
@@ -620,7 +623,7 @@ function evCard(e,isNow,isNext){
    e.type==='flight'?flightLine(e,isNow):null,
    kv.length?h('dl',{class:'kv'},kv):null,
    e.photos&&e.photos.length?picsEl(e):null,
-   ui.canEdit?h('div',{class:'row'},h('button',{class:'btn sm',type:'button',onclick:function(){openForm(e)}},'Edit'),(e.type==='parayan'&&seriesOf(e).length>1)?h('button',{class:'btn sm',type:'button',onclick:function(){openSeries(e.title,e.place)}},'Vakta & part for all sessions'):null):null));
+   (ui.canEdit&&canEditDate(e.date))?h('div',{class:'row'},h('button',{class:'btn sm',type:'button',onclick:function(){openForm(e)}},'Edit'),(e.type==='parayan'&&seriesOf(e).length>1)?h('button',{class:'btn sm',type:'button',onclick:function(){openSeries(e.title,e.place)}},'Vakta & part for all sessions'):null):null));
 }
 var mstack=[],skipPop=0;
 window.addEventListener('popstate',function(){if(skipPop>0){skipPop--;return}var t=mstack[mstack.length-1];if(t)t.fromBack()});
@@ -659,11 +662,11 @@ function dayView(){
     return h('div',{style:'margin-top:6px;display:flex;flex-direction:column;gap:2px'},
      h('span',{class:'patl',text:'\u{1FA94} '+(tr(r.title)||typeLabel('parayan'))+(r.n>1?' \u00b7 '+(lang==='gu'?dayOf(r.k,r.n):'Day '+r.k+' of '+r.n):'')}),
      bits.length?h('span',{class:'meta',text:bits.join(' \u00b7 ')}):null,
-     ui.canEdit?h('div',{class:'row'},h('button',{class:'btn sm',type:'button',onclick:function(){openWhole(r.title,r.place)}},lang==='gu'?'આખું પારાયણ સુધારો':(r.n>1?'Edit Parayan (Day 1 to '+r.n+')':'Edit Parayan'))):null)}),
+     (ui.canEdit&&canEditDate(r.date||ui.date))?h('div',{class:'row'},h('button',{class:'btn sm',type:'button',onclick:function(){openWhole(r.title,r.place)}},lang==='gu'?'આખું પારાયણ સુધારો':(r.n>1?'Edit Parayan (Day 1 to '+r.n+')':'Edit Parayan'))):null)}),
    adays.map(function(e){
     return h('div',{style:'margin-top:6px;display:flex;align-items:center;gap:8px;flex-wrap:wrap'},
      h('span',{class:'patl',text:tr(e.title||'').trim()||typeLabel(e.type)}),
-     ui.canEdit?h('button',{class:'btn sm',type:'button',onclick:function(){openForm(e)}},'Edit'):null)})));}
+     (ui.canEdit&&canEditDate(e.date))?h('button',{class:'btn sm',type:'button',onclick:function(){openForm(e)}},'Edit'):null)})));}
 
  var now=new Date(),nm=now.getHours()*60+now.getMinutes(),isToday=d===today(),nowIds={},nextId=null;
  if(isToday){evs.forEach(function(e){var s=toMin(e.start);if(s==null)return;var en=e.end?toMin(e.end):s+90;if(s<=nm&&nm<en)nowIds[e.id]=1;else if(s>nm&&!nextId)nextId=e.id});}
@@ -689,14 +692,14 @@ function planView(){
   var w=h('div',{style:'display:flex;flex-direction:column;gap:10px'});
   w.append(h('div',{class:'row',style:'justify-content:space-between;align-items:center'},
    h('div',{class:'row'},h('button',{class:'btn sm',type:'button',onclick:function(){ui.tourOpen='';render()}},'‹ '+T('Tours')),h('b',{text:cur.name})),
-   ui.canEdit?h('button',{class:'btn sm',type:'button',onclick:function(){openTour(cur)}},'Edit tour'):null));
+   (ui.canEdit&&canEditTour(cur))?h('button',{class:'btn sm',type:'button',onclick:function(){openTour(cur)}},'Edit tour'):null));
   w.append(h('p',{class:'note',style:'margin:0',text:fmt(cur.start,{day:'numeric',month:'short',year:'numeric'})+' – '+fmt(cur.end,{day:'numeric',month:'short',year:'numeric'})}));
-  if(ui.canEdit)w.append(h('button',{class:'btn pri',type:'button',style:'align-self:flex-start',onclick:function(){openStay(cur,null)}},'+ Add mandir'));
+  if(ui.canEdit&&canEditTour(cur))w.append(h('button',{class:'btn pri',type:'button',style:'align-self:flex-start',onclick:function(){openStay(cur,null)}},'+ Add mandir'));
   w.append(planDetail(cur));
   if(!cur.stays.length)w.append(h('div',{class:'empty',text:ui.canEdit?'No mandirs yet. Use Add mandir.':'No mandirs added yet.'}));
   return w}
  var yo={day:'numeric',month:'short',year:'numeric'},root=h('div',{style:'display:flex;flex-direction:column;gap:10px'});
- if(ui.canEdit)root.append(h('button',{class:'btn pri',type:'button',style:'align-self:flex-start',onclick:function(){openTour(null)}},'+ Add tour'));
+ if(ui.canEdit&&!scoped())root.append(h('button',{class:'btn pri',type:'button',style:'align-self:flex-start',onclick:function(){openTour(null)}},'+ Add tour'));
  tours.slice().sort(function(a,b){return a.start<b.start?-1:a.start>b.start?1:0}).forEach(function(t){
   var days=diff(t.start,t.end)+1,all=state.saints.every(function(s){return s.guest?(t.saints||[]).indexOf(s.id)<0:(t.saints||[]).indexOf(s.id)>-1});
   root.append(h('button',{class:'stay',type:'button',onclick:function(){ui.tourOpen=t.id;render()}},
@@ -729,7 +732,7 @@ function planDetail(t){
     h('div',{class:'n',text:tr(s.place)}),h('div',{class:'days',text:s.start===s.end?T('Travel'):(lang==='gu'?dg(n)+' દિવસ':n+' days')}),
     h('div',{class:'d',text:(s.start===s.end?fmt(s.start,yo):fmt(s.start)+(lang==='gu'?' થી ':' to ')+fmt(s.end,yo))+(s.region?' · '+tr(s.region):'')}),h('span'),
     tags.length?h('div',{class:'tags'},tags):null),
-   ui.canEdit?h('div',{class:'row'},h('button',{class:'btn sm',type:'button',onclick:function(){openStay(t,s)}},'Edit')):null))});
+   (ui.canEdit&&canEditTour(t))?h('div',{class:'row'},h('button',{class:'btn sm',type:'button',onclick:function(){openStay(t,s)}},'Edit')):null))});
  return root}
 function delIcon(btn){btn.innerHTML='<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>';return btn}
 function openTour(t){
@@ -1047,7 +1050,7 @@ function signOut(){
  Promise.race([stopPush,new Promise(function(r){setTimeout(r,4000)})]).then(function(){
   setPass('');try{localStorage.removeItem('tourCache')}catch(x){}
   state={tripStart:state.tripStart,tripEnd:state.tripEnd,stays:[],events:[],saints:[]};
-  picCache={};ui.authed=false;ui.canEdit=false;ui.offline=false;ui.role='';ui.admin=false;ui.gname='';ui.rem='';ui.remMsg='';ui.sideOpen=false;ui.dirty=0;ui.msg='';ui.gateMsg='';
+  picCache={};ui.authed=false;ui.canEdit=false;ui.editTours=null;ui.offline=false;ui.role='';ui.admin=false;ui.gname='';ui.rem='';ui.remMsg='';ui.sideOpen=false;ui.dirty=0;ui.msg='';ui.gateMsg='';
   render()})}
 function render(){
  var root=$('#root');root.textContent='';
@@ -1071,7 +1074,7 @@ function render(){
  if(ui.sideOpen)root.append(sideDrawer());
  if(ui.autoNow&&ui.authed&&ui.view==='day'){ui.autoNow=false;var nn=document.querySelector('.ev.now');if(nn)setTimeout(function(){var m=document.querySelector('.ev.now');if(m)m.scrollIntoView({behavior:'smooth',block:'center'})},900)}
  if(ui.canEdit){root.append(h('div',{class:'bar'},
-  h('button',{class:'btn',type:'button',onclick:function(){openForm(null)}},T('Add event')),
+  canEditDate(ui.date)?h('button',{class:'btn',type:'button',onclick:function(){openForm(null)}},T('Add event')):h('span',{class:'note',style:'align-self:center',text:lang==='gu'?'આ તારીખ તમારી યાત્રાની બહાર છે.':'This date is outside the tours you can edit.'}),
   (ui.dirty||ui.saving)?h('button',{class:'btn pri',type:'button',disabled:!ui.dirty||ui.saving,onclick:save},ui.saving?T('Saving'):(ui.dirty?T('Save and publish')+' ('+dg(ui.dirty)+')':T('No changes'))):null,
   ui.msg?h('span',{class:'note',style:'align-self:center',text:ui.msg}):null))}
 }
@@ -1093,7 +1096,7 @@ function openForm(ev){
  function grp(name,kids){var g=h('div',{style:'display:flex;flex-direction:column;gap:12px'},kids);groups[name]=g;return g}
  var checks=h('div',{class:'checks'},saintsOn(e.date).concat(state.saints.filter(function(s){return s.guest&&e.saints.indexOf(s.id)>-1&&saintsOn(e.date).indexOf(s)<0})).map(function(s){var c=h('input',{type:'checkbox',value:s.id});c.checked=e.saints.indexOf(s.id)>-1;return h('label',{},c,av(s.id),short(s))}));
  e.saints.filter(function(i){return i.charAt(0)==='~'}).forEach(function(i){var c=h('input',{type:'checkbox',value:i});c.checked=true;checks.append(h('label',{},c,av(i),i.slice(1)))});
- var tours=(state.tours||[]).slice().sort(function(a,b){return a.start<b.start?-1:a.start>b.start?1:0});
+ var tours=(state.tours||[]).filter(canEditTour).sort(function(a,b){return a.start<b.start?-1:a.start>b.start?1:0});
  ui.formTmp=[];
  function tourFor(dt){var m=tours.find(function(t){return t.start<=dt&&dt<=t.end});return m?m.id:''}
  var initTour=isNew&&curTour()?curTour().id:tourFor(e.date);
@@ -1183,6 +1186,7 @@ function openForm(ev){
   e.yajman=F.yajman.value.trim();e.driver=F.driver.value.trim();e.phone=F.phone.value.trim();e.flight=F.flight.value.trim();
   if(t==='car'){e.from=F.from.value.trim();e.to=F.to.value.trim();e.title=route(e);e.endDate=''}else if(t==='flight'){e.from=F.from2.value.trim();e.to=F.to2.value.trim()}
   if(!e.date){F.date.focus();return}
+  if(!canEditDate(e.date)){alert(lang==='gu'?'આ તારીખ તમારી યાત્રાની બહાર છે.':'This date is outside the tours you can edit. Pick a date inside your tour.');F.date.focus();return}
   if(t==='pravachan'){e.endDate='';e.dur=+F.dur.value||10;if(e.start){var sm=toMin(e.start),em=Math.min(sm+e.dur,1439);e.end=String(Math.floor(em/60)).padStart(2,'0')+':'+String(em%60).padStart(2,'0')}else e.end=''}
   if(isSer()){
    var kind=pkindSel.value,N=kind==='saptah'?7:5,base=Date.now(),k=0,ttl=e.title||((e.place?e.place+' ':'')+(kind==='saptah'?'Saptah':'Panchah')+' Parayan'),first=e.date;
@@ -1359,6 +1363,17 @@ function openAdmin(){
   var s={id:'x_'+slugify(nm).replace(/-/g,'')+Date.now().toString(36).slice(-3),name:nm,role:'Vakta',guest:true,short:ini};
   state.saints.push(s);ui.dirty++;save();
   msg='';mkLink(s,roleSel.value).then(function(g){nameIn.value='';msg='Added '+nm+'. Link: '+guestBase()+g.slug;load()}).catch(function(e){msg='Saint added, but the link failed: '+adminErr(e);load()})}
+ function scopeBox(g){
+  var tours=(state.tours||[]).slice().sort(function(a,b){return a.start<b.start?-1:a.start>b.start?1:0}),cur=Array.isArray(g.edit_tours)?g.edit_tours:null;
+  function setT(v){act('admin_set_guest_tours',{p_passcode:pass,p_id:g.id,p_tours:v})}
+  if(!tours.length)return null;
+  var all=h('input',{type:'checkbox'});all.checked=cur===null;all.addEventListener('change',function(){setT(all.checked?null:tours.map(function(t){return t.id}))});
+  var box=h('div',{style:'display:flex;flex-direction:column;gap:4px;font-size:13px;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:8px'},
+   h('label',{style:'display:flex;gap:8px;align-items:center;font-weight:700'},all,'Can edit everything'));
+  if(cur!==null){box.append(h('div',{class:'faint',text:'Can edit only these tours (they can view the rest):'}));
+   tours.forEach(function(t){var c=h('input',{type:'checkbox'});c.checked=cur.indexOf(t.id)>-1;c.addEventListener('change',function(){var n=tours.map(function(x){return x.id}).filter(function(id){return id===t.id?c.checked:cur.indexOf(id)>-1});setT(n)});box.append(h('label',{style:'display:flex;gap:8px;align-items:center'},c,t.name))});
+   if(!cur.length)box.append(h('div',{class:'faint',style:'color:var(--danger,#b3261e)',text:'No tours ticked: this person can only view.'}))}
+  return box}
  function row(g,s){
   var link=guestBase()+g.slug;
   var cp=h('button',{class:'btn sm',type:'button'},'Copy link');cp.addEventListener('click',function(){copyText(link,cp)});
@@ -1367,6 +1382,7 @@ function openAdmin(){
    h('div',{class:'row',style:'flex-wrap:nowrap'},s?av(s.id):null,h('span',{style:'font-weight:700',text:(s?s.name:g.name)+(g.blocked?'  (blocked)':'')}),s&&s.id===ME?meBadge():null),
    h('div',{class:'faint',style:'word-break:break-all',text:link}),
    h('div',{class:'faint',text:seenTxt(g.last_seen)+' · '+g.visits+(g.visits===1?' visit':' visits')}),
+   g.role==='editor'?scopeBox(g):null,
    h('div',{class:'row'},cp,rs,s?h('button',{class:'btn sm',type:'button',onclick:function(){openSaintEdit(s,load)}},'Edit name & photo'):null,
     h('button',{class:'btn sm',type:'button',onclick:function(){act('admin_update_guest',{p_passcode:pass,p_id:g.id,p_blocked:!g.blocked,p_role:null})}},g.blocked?'Unblock':'Block'),
     h('button',{class:'btn sm danger',type:'button',onclick:function(){if(confirm('Remove the link for '+g.name+'? It will stop working.'))act('admin_delete_guest',{p_passcode:pass,p_id:g.id})}},'Delete link')))}
@@ -1398,7 +1414,7 @@ function openAdmin(){
     orphans.map(function(g){return row(g,null)})))}
  var form=h('div',{class:'form'},
   h('div',{class:'row',style:'justify-content:space-between;align-items:center'},h('h2',{style:'margin:0',text:'People & links'}),h('button',{class:'btn sm',type:'button','aria-label':'Close',onclick:function(){modal.remove()}},'×')),
-  h('p',{class:'note',style:'margin:0',text:'Each saint gets their own link. Block or delete a link any time to close access. Change Reader or Editor whenever you like.'}),
+  h('p',{class:'note',style:'margin:0',text:'Each saint gets their own link. Block or delete a link any time to close access. Change Reader or Editor whenever you like. An editor can be limited to chosen tours.'}),
   body);
  modal.append(form);document.body.append(modal);backable(modal);load()}
 
@@ -1432,7 +1448,7 @@ function enter(pass){
  ui.gateMsg='';ui.busy=true;render();
  return Promise.race([rpc('get_tour_state',{p_passcode:pass}),new Promise(function(_,rj){setTimeout(function(){rj({message:'timeout'})},10000)})]).then(function(res){
   if(!res||!res.data||!res.data.events)throw {message:'empty'};
-  setPass(pass);try{localStorage.setItem('tourCache',JSON.stringify({pass:pass,res:res}))}catch(x){}state=res.data;normState();ui.role=res.role;ui.admin=!!res.admin;ui.gname=res.name||'';ui.gsaint=res.saint_id||'';if(ui.gsaint&&ui.viaLink){ui.sel=[ui.gsaint];saveSel()}ui.viaLink=false;ui.canEdit=res.role==='editor';ui.authed=true;ui.autoNow=true;ui.busy=false;ui.date=calClamp(today());render();loadTithi();remRefresh().then(render);prefetchPics()
+  setPass(pass);try{localStorage.setItem('tourCache',JSON.stringify({pass:pass,res:res}))}catch(x){}state=res.data;normState();ui.role=res.role;ui.admin=!!res.admin;ui.gname=res.name||'';ui.gsaint=res.saint_id||'';if(ui.gsaint&&ui.viaLink){ui.sel=[ui.gsaint];saveSel()}ui.viaLink=false;ui.editTours=(res.role==='editor'&&Array.isArray(res.edit_tours))?res.edit_tours:null;ui.canEdit=res.role==='editor'&&(!scoped()||ui.editTours.length>0);if(scoped()&&ui.editTours.length===1&&!ui.tourSel){ui.tourSel=ui.editTours[0];try{localStorage.setItem('tourSel',ui.tourSel)}catch(x){}}ui.authed=true;ui.autoNow=true;ui.busy=false;ui.date=calClamp(today());render();loadTithi();remRefresh().then(render);prefetchPics()
  }).catch(function(err){
   ui.busy=false;ui.authed=false;
   if(/bad_passcode/.test(JSON.stringify(err||{}))){setPass('');try{localStorage.removeItem('tourCache')}catch(x){}ui.gateMsg=ui.viaLink?'This link is not active. Please ask for a new link.':'Wrong password.'}
