@@ -1104,7 +1104,7 @@ function openForm(ev){
   var ticked=[].slice.call(checks.querySelectorAll('input')).filter(function(c){return c.checked}).map(function(c){return c.value});
   var on=fresh?(t?tIdsFor(t):saintsOn(e.date).map(function(s){return s.id})):ticked,order=[];
   function add(i){if(order.indexOf(i)<0)order.push(i)}
-  if(t)tIdsFor(t).forEach(add);on.forEach(add);saintsOn(e.date).forEach(function(s){add(s.id)});
+  if(t)tIdsFor(t).forEach(add);on.forEach(add);if(!t)saintsOn(e.date).forEach(function(s){add(s.id)});
   checks.textContent='';
   order.forEach(function(i){var s=state.saints.find(function(x){return x.id===i});if(!s&&i.charAt(0)!=='~')return;var c=h('input',{type:'checkbox',value:i});c.checked=on.indexOf(i)>-1;checks.append(h('label',{},c,av(i),s?short(s):i.slice(1)))});
   if(t)['vakta','kvakta'].forEach(function(kk){var el=F[kk];if(!el)return;(t.tmp||[]).forEach(function(n){if(![].slice.call(el.options).some(function(o){return o.value==='~'+n}))el.append(h('option',{value:'~'+n,text:n}))})});
