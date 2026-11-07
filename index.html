@@ -557,7 +557,8 @@ function avFor(s,id,extra){if(!s&&id&&id.charAt(0)==='~'){var tn=id.slice(1);ret
  if(s&&s.photo){var im=pimg(s.photo,{alt:'',style:'position:absolute;inset:0;width:100%;height:100%;object-fit:cover'});im.addEventListener('error',function(){im.remove()});sp.append(im)}
  return sp}
 function stayFor(d){var m=null;state.stays.forEach(function(s){if(s.start<=d&&d<=s.end)m=s});return m}
-function dayAll(d){return state.events.filter(function(e){return e.date<=d&&d<=(e.endDate||e.date)})}
+function curTour(){if(!ui.tourSel)return null;var t=(state.tours||[]).find(function(x){return x.id===ui.tourSel});if(!t)ui.tourSel='';return t||null}
+function dayAll(d){var t=curTour();if(t&&(d<t.start||d>t.end))return [];return state.events.filter(function(e){return e.date<=d&&d<=(e.endDate||e.date)})}
 function hasSel(e){return !ui.sel.length||ui.sel.some(function(id){return e.saints.indexOf(id)>-1})}
 function parOn(d){var seen={},out=[];
  dayAll(d).forEach(function(e){if(e.type!=='parayan')return;var k=e.title+'|'+e.place;if(seen[k])return;seen[k]=1;
@@ -642,6 +643,8 @@ function dayView(){
   h('button',{class:'btn',type:'button',onclick:function(){ui.date=calClamp(addDays(d,1));render()},'aria-label':'Next day'},'›')));
  root.append(h('div',{class:'nav',style:'justify-content:center'},h('button',{class:'btn',type:'button',onclick:function(){ui.date=calClamp(today());render();setTimeout(function(){var n=document.querySelector('.ev.now');if(n)n.scrollIntoView({behavior:'smooth',block:'center'});else window.scrollTo({top:0,behavior:'smooth'})},120)}},T('Today')),
   h('span',{class:'sub',text:st?dayOf(diff(state.tripStart,d)+1,diff(state.tripStart,state.tripEnd)+1):''})));
+ var tsel=curTour();
+ if(tsel)root.append(h('p',{class:'note',style:'margin:0;text-align:center',text:(lang==='gu'?'ફક્ત આ યાત્રા: ':'Showing only: ')+tsel.name+' ('+fmt(tsel.start,{day:'numeric',month:'short'})+' – '+fmt(tsel.end,{day:'numeric',month:'short',year:'numeric'})+')'+((d<tsel.start||d>tsel.end)?(lang==='gu'?' · આ તારીખ આ યાત્રાની બહાર છે':' · this date is outside the tour'):'')}));
  var prs=parOn(d);
  var evs=evsOn(d).slice().sort(function(a,b){return sortKey(a)-sortKey(b)});
  var adays=evs.filter(function(e){return e.type!=='parayan'&&!e.start&&!e.session});
@@ -811,10 +814,12 @@ function goDay(d){ui.date=d;ui.view='day';render();window.scrollTo(0,0)}
 function inYatra(e){return e.date>=state.tripStart&&e.date<=state.tripEnd}
 function sumView(){
  var root=h('div',{style:'display:flex;flex-direction:column;gap:14px'}),by={};
- var scope=ui.sumScope||'yatra',isY=scope==='yatra',evs=state.events.filter(function(e){return e.type!=='rest'&&e.type!=='lunch'&&e.type!=='pothiyatra'&&inYatra(e)===isY&&hasSel(e)});
- root.append(h('div',{class:'chips',role:'group','aria-label':'Summary of'},
+ var tour=curTour(),scope=tour?'yatra':(ui.sumScope||'yatra'),isY=scope==='yatra',lo=tour?tour.start:state.tripStart,hi=tour?tour.end:state.tripEnd,stayList=tour?(tour.stays||[]):state.stays;
+ var evs=state.events.filter(function(e){return e.type!=='rest'&&e.type!=='lunch'&&e.type!=='pothiyatra'&&(tour?(e.date>=lo&&e.date<=hi):inYatra(e)===isY)&&hasSel(e)});
+ if(tour)root.append(h('h3',{style:'margin:0',text:tour.name}));
+ else root.append(h('div',{class:'chips',role:'group','aria-label':'Summary of'},
   [['yatra',T('London Yatra')],['other',T('Other days')]].map(function(x){return h('button',{class:'chip',type:'button','aria-pressed':scope===x[0]?'true':'false',style:'padding:6px 14px',onclick:function(){ui.sumScope=x[0];ui.sumOpen='';render()}},x[1])})));
- if(isY)root.append(h('p',{class:'note',style:'margin:0',text:fmt(state.tripStart,{day:'numeric',month:'short',year:'numeric'})+' – '+fmt(state.tripEnd,{day:'numeric',month:'short',year:'numeric'})}));
+ if(isY)root.append(h('p',{class:'note',style:'margin:0',text:fmt(lo,{day:'numeric',month:'short',year:'numeric'})+' – '+fmt(hi,{day:'numeric',month:'short',year:'numeric'})}));
  else root.append(h('p',{class:'note',style:'margin:0',text:lang==='gu'?'લંડન યાત્રાના સમયગાળા સિવાયના કાર્યક્રમો':'Events on days outside the London Yatra period.'}));
  if(ui.sel.length)root.append(h('p',{class:'note',style:'margin:0',text:(lang==='gu'?'સંત પસંદ કરેલા: ':'Showing only: ')+ui.sel.map(sName).filter(Boolean).join(', ')}));
  SUMORDER.forEach(function(k){by[k]=[]});evs.forEach(function(e){(by[e.type]||by.other).push(e)});
@@ -822,7 +827,7 @@ function sumView(){
  function count(k){return k==='parayan'?sers.length:by[k].length}
  function sub(k){if(k==='parayan')return by.parayan.length?dg(by.parayan.length)+' '+T('sessions'):'';if(k==='katha'){var d=0;by[k].forEach(function(e){d+=e.endDate?diff(e.date,e.endDate)+1:1});return d?dg(d)+' '+T(d===1?'session':'sessions'):''}return ''}
  var places={},stops=0,statList;
- if(isY){state.stays.forEach(function(s){if(s.place!=='India'){stops++;places[s.place]=1}});statList=[[diff(state.tripStart,state.tripEnd)+1,'Days on tour'],[stops,'Stops'],[Object.keys(places).length,'Different mandirs']]}
+ if(isY){stayList.forEach(function(s){if(s.place!=='India'){stops++;places[s.place]=1}});statList=[[diff(lo,hi)+1,'Days on tour'],[stops,'Stops'],[Object.keys(places).length,'Different mandirs']]}
  else{var dset={},pset={};evs.forEach(function(e){var n=e.endDate?diff(e.date,e.endDate)+1:1;for(var i=0;i<n;i++)dset[addDays(e.date,i)]=1;if(e.place)pset[e.place]=1});statList=[[evs.length,'Events'],[Object.keys(dset).length,'Days with events'],[Object.keys(pset).length,'Locations']]}
  root.append(h('div',{class:'stats'},
   statList.map(function(x){return h('div',{class:'stat'},h('b',{text:dg(x[0])}),h('span',{text:T(x[1])}))})));
@@ -969,9 +974,24 @@ ui.sideOpen=false;
 function closeSide(){ui.sideOpen=false;render()}
 try{var _ss=JSON.parse(localStorage.getItem('saintSel')||'[]');if(Array.isArray(_ss))ui.sel=_ss}catch(x){}
 function saveSel(){try{localStorage.setItem('saintSel',JSON.stringify(ui.sel))}catch(x){}}
+try{ui.tourSel=localStorage.getItem('tourSel')||''}catch(x){ui.tourSel=''}
+function pickTour(id){
+ ui.tourSel=id;try{if(id)localStorage.setItem('tourSel',id);else localStorage.removeItem('tourSel')}catch(x){}
+ var t=curTour();if(t){if(ui.date<t.start||ui.date>t.end)ui.date=t.start}
+ ui.sumOpen='';render()}
+function tourPicker(){
+ var tours=(state.tours||[]).slice().sort(function(a,b){return a.start<b.start?-1:a.start>b.start?1:0});
+ if(!tours.length)return null;
+ var gu=lang==='gu',yo={day:'numeric',month:'short',year:'numeric'};
+ function chip(id,label,sub,on){return h('button',{class:'chip'+(on?' hl':''),type:'button','aria-pressed':on?'true':'false',style:'flex-direction:column;align-items:flex-start;gap:0;text-align:left',onclick:function(){pickTour(id)}},h('span',{text:label}),sub?h('span',{class:'faint',style:'font-size:11px',text:sub}):null)}
+ return h('div',{style:'display:flex;flex-direction:column;gap:6px;margin-bottom:10px'},
+  h('b',{text:gu?'યાત્રા':'Tour'}),
+  h('p',{class:'note',style:'margin:0',text:gu?'એક યાત્રા પસંદ કરો અને ફક્ત તે જ યાત્રાના કાર્યક્રમ જુઓ.':'Pick a tour to see only that tour’s events and summary.'}),
+  chip('',gu?'બધી યાત્રાઓ':'All tours','',!ui.tourSel),
+  tours.map(function(t){return chip(t.id,t.name,fmt(t.start,yo)+' – '+fmt(t.end,yo),ui.tourSel===t.id)}))}
 function sideTab(){
- var on=ui.sel.length>0&&ui.view==='day',n=on?evsOn(ui.date).length:0;
- var lbl=on?(lang==='gu'?'સંત પસંદ કરેલા · ':'Saints highlighted · ')+n+(lang==='gu'?' કાર્યક્રમ':' events'):(lang==='gu'?'સંત પસંદ કરો':'Choose saints');
+ var tt0=curTour(),on=ui.sel.length>0&&ui.view==='day',n=on?evsOn(ui.date).length:0;
+ var lbl=on?(lang==='gu'?'સંત પસંદ કરેલા · ':'Saints highlighted · ')+n+(lang==='gu'?' કાર્યક્રમ':' events'):tt0?(lang==='gu'?'યાત્રા: ':'Tour: ')+tt0.name:(lang==='gu'?'યાત્રા અને સંત પસંદ કરો':'Choose tour & saints');
  var b=h('button',{class:'stab'+(on?' on':''),type:'button','aria-label':lbl,title:lbl,'aria-expanded':ui.sideOpen?'true':'false',onclick:function(){ui.sideOpen=true;ui.sideFresh=true;render()}});
  b.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3.2"/><path d="M3 20c0-3.3 2.7-5.5 6-5.5s6 2.2 6 5.5"/><path d="M16 5.2a3.2 3.2 0 0 1 0 5.8"/><path d="M18 14.8c2 .7 3.2 2.4 3.2 5.2"/></svg>';
  if(on)b.append(h('span',{class:'cnt',text:dg(n)}));
@@ -987,7 +1007,9 @@ function sideDrawer(){
  var close=h('button',{class:'btn sm',type:'button','aria-label':'Close',onclick:closeSide},'×');
  var shown=evsOn(ui.date).length;
  var dr=h('div',{class:'drawer'+(fresh?' fresh':''),role:'dialog','aria-modal':'true','aria-label':lang==='gu'?'સંત પસંદ કરો':'Choose saints'},
-  h('div',{class:'dh'},h('h2',{text:lang==='gu'?'સંતો':'Saints'}),close),
+  h('div',{class:'dh'},h('h2',{text:lang==='gu'?'યાત્રા અને સંતો':'Tour & saints'}),close),
+  tourPicker(),
+  h('b',{text:lang==='gu'?'સંતો':'Saints'}),
   h('p',{class:'note',style:'margin:0 0 4px',text:lang==='gu'?'જેમના કાર્યક્રમ જોવા હોય તેમને ટેપ કરો':'Tap to highlight the saints you want to follow.'}),
   h('button',{class:'chip'+(ui.sel.length?'':' hl'),type:'button','aria-pressed':ui.sel.length?'false':'true',onclick:clear},h('span',{class:'av all',text:lang==='gu'?'બધા':'All'}),T('Everyone'),h('span',{class:'ct',text:dg(day.length)})),
   saintGroups(cnt,toggle),
@@ -1264,7 +1286,9 @@ function orderedSaints(){var me=state.saints.filter(function(s){return s.id===ME
 function saintGroups(cnt,toggle){
  var all=orderedSaints();
  function chip(s){var sel=ui.sel.indexOf(s.id)>-1;return h('button',{class:'chip'+(sel?' hl':''),type:'button','aria-pressed':sel?'true':'false',onclick:toggle(s.id)},av(s.id),short(s),s.id===ME?meBadge():null,h('span',{class:'ct',text:dg(cnt(s.id))}),h('span',{class:'ck',text:sel?'✓':''}))}
- var main=all.filter(function(s){return s.id===ME||cnt(s.id)>0||ui.sel.indexOf(s.id)>-1}),rest=all.filter(function(s){return main.indexOf(s)<0});
+ var tt=curTour(),onTour=tt?(tt.saints||[]):[];
+ var main=all.filter(function(s){return s.id===ME||onTour.indexOf(s.id)>-1||cnt(s.id)>0||ui.sel.indexOf(s.id)>-1}),rest=all.filter(function(s){return main.indexOf(s)<0});
+ if(tt)main.sort(function(a,b){var x=onTour.indexOf(a.id)>-1||a.id===ME?0:1,y=onTour.indexOf(b.id)>-1||b.id===ME?0:1;return x-y});
  var out=main.map(chip);
  if(rest.length){
   out.push(h('button',{class:'btn',type:'button','aria-expanded':ui.othersOpen?'true':'false',style:'width:100%;margin-top:6px',onclick:function(){ui.othersOpen=!ui.othersOpen;render()}},(lang==='gu'?'અન્ય સંતો':'Other saints')+' ('+dg(rest.length)+') '+(ui.othersOpen?'▴':'▾')));
