@@ -682,7 +682,8 @@ function syncStays(){
  all.sort(function(a,b){return a.start<b.start?-1:a.start>b.start?1:0});
  state.stays=all;if(lo){state.tripStart=lo;state.tripEnd=hi}}
 function planView(){
- var tours=state.tours||[],cur=null;
+ var tsel=curTour(),tours=tsel?[tsel]:(state.tours||[]),cur=null;
+ if(tsel&&ui.tourOpen&&ui.tourOpen!==tsel.id)ui.tourOpen='';
  if(ui.tourOpen){cur=tours.find(function(t){return t.id===ui.tourOpen})||null;if(!cur)ui.tourOpen=''}
  if(cur){
   var w=h('div',{style:'display:flex;flex-direction:column;gap:10px'});
@@ -705,6 +706,7 @@ function planView(){
    h('span',{class:'d',text:dg(days)+' '+T('days')+' · '+dg(tourStops(t))+' '+T('Stops')}),
    (!all&&(t.saints||[]).length)?h('span',{class:'row',style:'margin-top:4px'},t.saints.map(function(i){return av(i)})):null))});
  if(!tours.length)root.append(h('div',{class:'empty',text:ui.canEdit?'No tours yet. Use Add tour.':'No tours yet.'}));
+ if(tsel)root.append(h('button',{class:'btn sm',type:'button',style:'align-self:flex-start',onclick:function(){pickTour('')}},lang==='gu'?'બધી યાત્રાઓ બતાવો':'Show all tours'));
  return root}
 function nrm(x){return String(x||'').toLowerCase().replace(/[^a-z0-9઀-૿]/g,'')}
 function planDetail(t){
