@@ -1082,7 +1082,7 @@ function render(){
 function durOf(e){if(e.dur)return e.dur;if(e.start&&e.end){var d=toMin(e.end)-toMin(e.start);if(d===5||d===10||d===15)return d}return 10}
 function openForm(ev){
  var isNew=!ev,st=stayFor(ui.date);
- var e=ev?JSON.parse(JSON.stringify(ev)):{id:'e'+Date.now(),type:'sabha',title:'',date:ui.date,endDate:'',start:'',end:'',place:st?st.place:'',saints:saintsOn(ui.date).map(function(s){return s.id}),vakta:'',shastra:'',portion:'',session:'',car:'',from:'',to:'',driver:'',phone:'',flight:'',yajman:'',notes:'',photos:[]};
+ var e=ev?JSON.parse(JSON.stringify(ev)):{id:'e'+Date.now(),type:'padramani',title:'',date:ui.date,endDate:'',start:'',end:'',place:st?st.place:'',saints:saintsOn(ui.date).map(function(s){return s.id}),vakta:'',shastra:'',portion:'',session:'',car:'',from:'',to:'',driver:'',phone:'',flight:'',yajman:'',notes:'',photos:[]};
  var F={};
  function field(id,label,el,extra){F[id]=el;el.id='f_'+id;return h('div',{class:'f'},h('label',{for:'f_'+id,text:label}),el,extra)}
  function inp(id,type,val){return h('input',{type:type||'text',value:val||''})}
