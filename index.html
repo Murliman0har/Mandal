@@ -795,17 +795,17 @@ function openStay(t,s){
  var isNew=!s,last=t.stays.length?t.stays[t.stays.length-1].end:'';
  var q=s?JSON.parse(JSON.stringify(s)):{id:'s'+Date.now(),place:'',region:'',start:last?addDays(last,1):t.start,end:last?addDays(last,1):t.start};
  var F={};
- function autoOf(ty){return state.events.filter(function(x){return x.auto===q.id+':'+ty}).sort(function(a,b){return a.date<b.date?-1:1})}
- function autoVal(ty,k){var l=autoOf(ty);return l.length?(l[0][k]||''):''}
- function syncDaily(ty,st,en){var tag=q.id+':'+ty,days=[],n=diff(q.start,q.end)+1,i;
+ function autoOf(ty,sl){return state.events.filter(function(x){return x.auto===q.id+':'+ty+(sl||'')}).sort(function(a,b){return a.date<b.date?-1:1})}
+ function autoVal(ty,k,sl){var l=autoOf(ty,sl);return l.length?(l[0][k]||''):''}
+ function syncDaily(ty,st,en,sl){var tag=q.id+':'+ty+(sl||''),days=[],n=diff(q.start,q.end)+1,i;
   for(i=0;i<n;i++)days.push(addDays(q.start,i));
-  var have={};autoOf(ty).forEach(function(x){have[x.date]=x});
+  var have={};autoOf(ty,sl).forEach(function(x){have[x.date]=x});
   if(!st){state.events=state.events.filter(function(x){return x.auto!==tag});return}
   var keep={};days.forEach(function(d){keep[d]=1});
   state.events=state.events.filter(function(x){return x.auto!==tag||keep[x.date]});
   var base=Date.now(),k=0;
   days.forEach(function(d){var x=have[d];if(x){x.start=st;x.end=en;x.place=q.place}
-   else state.events.push({id:'e'+base+'a'+(k++),type:ty,title:'',date:d,endDate:'',start:st,end:en,place:q.place,saints:saintsOn(d).map(function(z){return z.id}),vakta:'',shastra:'',portion:'',session:'',car:'',from:'',to:'',driver:'',phone:'',flight:'',yajman:'',notes:'',photos:[],auto:tag})});
+   else state.events.push({id:'e'+base+'a'+ty.charAt(0)+(sl||'')+(k++),type:ty,title:'',date:d,endDate:'',start:st,end:en,place:q.place,saints:saintsOn(d).map(function(z){return z.id}),vakta:'',shastra:'',portion:'',session:'',car:'',from:'',to:'',driver:'',phone:'',flight:'',yajman:'',notes:'',photos:[],auto:tag})});
   state.events.sort(function(a,b){return a.date<b.date?-1:a.date>b.date?1:0})}
  function field(id,label,type,val){var el=h('input',{type:type,value:val||''});F[id]=el;el.id='sf_'+id;return h('div',{class:'f'},h('label',{for:'sf_'+id,text:label}),el)}
  var modal=h('div',{class:'modal',role:'dialog','aria-modal':'true','aria-label':isNew?'Add mandir':'Edit mandir'});
@@ -815,14 +815,18 @@ function openStay(t,s){
   q.region=F.region.value.trim();q.start=F.start.value||q.start;q.end=F.end.value&&F.end.value>=q.start?F.end.value:q.start;
   var i=t.stays.findIndex(function(y){return y.id===q.id});if(i>-1)t.stays[i]=q;else t.stays.push(q);
   if(q.start<t.start)t.start=q.start;if(q.end>t.end)t.end=q.end;
-  syncDaily('pothiyatra',F.aS.value,F.aE.value);syncDaily('katha',F.kS.value,F.kE.value);
+  syncDaily('pothiyatra',F.aS.value,F.aE.value);syncDaily('pothiyatra',F.a2S.value,F.a2E.value,'2');syncDaily('katha',F.kS.value,F.kE.value);syncDaily('katha',F.k2S.value,F.k2E.value,'2');
   syncStays();ui.dirty++;modal.remove();render()}},
   h('div',{class:'row',style:'align-items:center;gap:10px'},isNew?null:delBtn,h('h2',{style:'margin:0',text:isNew?'Add mandir':'Edit mandir'})),
   field('place','Mandir / place','text',q.place),field('region','Region (optional)','text',q.region),
   h('div',{class:'two'},field('start','From date','date',q.start),field('end','To date','date',q.end)),
-  h('div',{class:'f'},h('span',{class:'lab',text:'Daily programs'}),h('p',{class:'note',style:'margin:0',text:'Set a time to add that program on every day of this stay. Clear the start time to remove it from all days.'})),
+  h('div',{class:'f'},h('span',{class:'lab',text:'Daily programs'}),h('p',{class:'note',style:'margin:0',text:'Set a time to add that program on every day of this stay, morning and evening. Clear a start time to remove it from all days.'})),
+  h('b',{text:'Morning (AM)'}),
   h('div',{class:'two'},field('aS','Aarti Niyam start','time',autoVal('pothiyatra','start')),field('aE','Aarti Niyam end','time',autoVal('pothiyatra','end'))),
   h('div',{class:'two'},field('kS','Katha start','time',autoVal('katha','start')),field('kE','Katha end','time',autoVal('katha','end'))),
+  h('b',{text:'Evening (PM)'}),
+  h('div',{class:'two'},field('a2S','Aarti Niyam start','time',autoVal('pothiyatra','start','2')),field('a2E','Aarti Niyam end','time',autoVal('pothiyatra','end','2'))),
+  h('div',{class:'two'},field('k2S','Katha start','time',autoVal('katha','start','2')),field('k2E','Katha end','time',autoVal('katha','end','2'))),
   h('div',{class:'row'},h('button',{class:'btn pri',type:'submit'},T('Done')),h('button',{class:'btn',type:'button',onclick:function(){modal.remove()}},T('Cancel'))));
  modal.append(form);document.body.append(modal);backable(modal);F.place.focus()}
 
