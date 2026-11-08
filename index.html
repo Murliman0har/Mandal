@@ -734,7 +734,7 @@ function planDetail(t){
     h('div',{class:'n',text:tr(s.place)}),h('div',{class:'days',text:s.start===s.end?T('Travel'):(lang==='gu'?dg(n)+' દિવસ':n+' days')}),
     h('div',{class:'d',text:(s.start===s.end?fmt(s.start,yo):fmt(s.start)+(lang==='gu'?' થી ':' to ')+fmt(s.end,yo))+(s.region?' · '+tr(s.region):'')}),h('span'),
     tags.length?h('div',{class:'tags'},tags):null),
-   (ui.canEdit&&canEditTour(t))?h('div',{class:'row'},h('button',{class:'btn sm',type:'button',onclick:function(){openStay(t,s)}},'Edit')):null))});
+   (ui.canEdit&&canEditTour(t))?h('div',{class:'row'},h('button',{class:'btn sm',type:'button',onclick:function(){openStay(t,s)}},'Edit mandir')):null))});
  return root}
 function delIcon(btn){btn.innerHTML='<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>';return btn}
 function openTour(t){
@@ -806,12 +806,14 @@ function openStay(t,s){
   state.events=state.events.filter(function(x){return x.auto!==tag||keep[x.date]});
   var base=Date.now(),k=0;
   var us=modeVal(autoOf(ty,sl),'start'),ue=modeVal(autoOf(ty,sl),'end');
-  days.forEach(function(d){var x=have[d];if(x){if(x.start===us&&x.end===ue){x.start=st;x.end=en}x.place=q.place}
+  days.forEach(function(d){var x=have[d];if(x){if(ovr||(x.start===us&&x.end===ue)){x.start=st;x.end=en}x.place=q.place}
    else state.events.push({id:'e'+base+'a'+ty.charAt(0)+(sl||'')+(k++),type:ty,title:'',date:d,endDate:'',start:st,end:en,place:q.place,saints:saintsOn(d).map(function(z){return z.id}),vakta:'',shastra:'',portion:'',session:'',car:'',from:'',to:'',driver:'',phone:'',flight:'',yajman:'',notes:'',photos:[],auto:tag})});
   state.events.sort(function(a,b){return a.date<b.date?-1:a.date>b.date?1:0})}
  function field(id,label,type,val){var el=h('input',{type:type,value:val||''});F[id]=el;el.id='sf_'+id;return h('div',{class:'f'},h('label',{for:'sf_'+id,text:label}),el)}
  function timesOf(sid,ty,k,sl){var l=state.events.filter(function(x){return x.auto===sid+':'+ty+(sl||'')}).sort(function(a,b){return a.date<b.date?-1:1});return modeVal(l,k)}
- var filled=false;
+ var filled=false,ovr=false;
+ var ovrCk=h('input',{type:'checkbox'}),oddDays=0;
+ [['pothiyatra',''],['pothiyatra','2'],['katha',''],['katha','2']].forEach(function(r){var l=autoOf(r[0],r[1]),us0=modeVal(l,'start'),ue0=modeVal(l,'end');l.forEach(function(x){if((x.start||'')!==us0||(x.end||'')!==ue0)oddDays++})});
  function fillTimes(place){var src=null;t.stays.forEach(function(x){if(x.id!==q.id&&nrm(x.place)===nrm(place)&&state.events.some(function(e){return e.auto&&e.auto.indexOf(x.id+':')===0})&&(!src||x.start>src.start))src=x});
   var ids=['aS','aE','kS','kE','a2S','a2E','k2S','k2E'];
   if(!src){if(filled)ids.forEach(function(i){if(F[i])F[i].value=''});filled=false;return}
@@ -835,6 +837,7 @@ function openStay(t,s){
   q.region=F.region.value.trim();q.start=F.start.value||q.start;q.end=F.end.value&&F.end.value>=q.start?F.end.value:q.start;
   var i=t.stays.findIndex(function(y){return y.id===q.id});if(i>-1)t.stays[i]=q;else t.stays.push(q);
   if(q.start<t.start)t.start=q.start;if(q.end>t.end)t.end=q.end;
+  ovr=!isNew&&ovrCk.checked;
   syncDaily('pothiyatra',F.aS.value,F.aE.value);syncDaily('pothiyatra',F.a2S.value,F.a2E.value,'2');syncDaily('katha',F.kS.value,F.kE.value);syncDaily('katha',F.k2S.value,F.k2E.value,'2');
   syncStays();ui.dirty++;modal.remove();render()}},
   h('div',{class:'row',style:'align-items:center;gap:10px'},isNew?null:delBtn,h('h2',{style:'margin:0',text:isNew?'Add mandir':'Edit mandir'})),
@@ -847,6 +850,7 @@ function openStay(t,s){
   h('b',{text:'Evening (PM)'}),
   h('div',{class:'two'},field('a2S','Aarti Niyam start','time',autoVal('pothiyatra','start','2')),field('a2E','Aarti Niyam end','time',autoVal('pothiyatra','end','2'))),
   h('div',{class:'two'},field('k2S','Katha start','time',autoVal('katha','start','2')),field('k2E','Katha end','time',autoVal('katha','end','2'))),
+  (!isNew&&oddDays)?h('label',{style:'display:flex;gap:8px;align-items:flex-start;font-size:13px;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:8px'},ovrCk,'Apply these times to every day, including '+oddDays+' program'+(oddDays===1?'':'s')+' I changed by hand'):null,
   h('div',{class:'row'},h('button',{class:'btn pri',type:'submit'},T('Done')),h('button',{class:'btn',type:'button',onclick:function(){modal.remove()}},T('Cancel'))));
  modal.append(form);document.body.append(modal);backable(modal);if(placeSel&&!placeSel.value)placeSel.focus();else if(!F.place.hidden)F.place.focus()}
 
