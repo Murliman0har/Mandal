@@ -653,7 +653,9 @@ function dayView(){
  var adays=evs.filter(function(e){return e.type!=='parayan'&&!e.start&&!e.session});
  evs=evs.filter(function(e){return adays.indexOf(e)<0});
  if(st||prs.length||adays.length){var meta=[];
-  if(st){var n=diff(st.start,st.end)+1,k=diff(st.start,d)+1,idx=state.stays.indexOf(st),prev=state.stays[idx-1],gu=lang==='gu';
+  if(st){var n=diff(st.start,st.end)+1,k=diff(st.start,d)+1,tr0=(state.tours||[]).find(function(x){return (x.stays||[]).indexOf(st)>-1});
+   if(tr0){var prior=0,tot=0;tr0.stays.forEach(function(x){if(nrm(x.place)!==nrm(st.place))return;var dn=diff(x.start,x.end)+1;tot+=dn;if(x!==st&&x.end<st.start)prior+=dn});if(tot>n){k+=prior;n=tot}}
+   var idx=state.stays.indexOf(st),prev=state.stays[idx-1],gu=lang==='gu';
    meta=[tr(st.region)];if(st.start!==st.end)meta.push(gu?'અહીં '+dayOf(k,n):'Day '+k+' of '+n+' here');
    if(d===st.start&&prev&&prev.place!==st.place)meta.push(gu?tr(prev.place)+' થી આગમન':'Arriving from '+prev.place);
    var nx=state.stays[idx+1];if(d===st.end&&nx)meta.push(gu?'આજે '+tr(nx.place)+' તરફ પ્રસ્થાન':'Moving to '+nx.place+' today')}
@@ -724,12 +726,12 @@ function planDetail(t){
    h('div',{style:gr+';border-bottom:1px solid var(--line);padding-bottom:4px'},h('b',{text:gu?'સંત':'Saint'}),h('b',{text:gu?'ક્રિયા':'Kriya'})),
    kl.map(function(sa){return h('div',{style:gr},h('span',{text:nm(sa.id)}),h('span',{style:'white-space:pre-wrap',text:kr[sa.id]||'\u2014'}))})))}
  t.stays.forEach(function(s){
-  var n=0,visits=0,seen={},tags=[];t.stays.forEach(function(x){if(nrm(x.place)===nrm(s.place)){n+=diff(x.start,x.end)+1;visits++}});
+  var n=diff(s.start,s.end)+1,seen={},tags=[];
   state.events.forEach(function(e){if(['parayan','katha','pothiyatra','padramani','vastu','outing','sabha','pravachan'].indexOf(e.type)>-1&&e.date<=s.end&&(e.endDate||e.date)>=s.start&&(nrm(e.place)===nrm(s.place)||(!state.stays.some(function(x){return nrm(x.place)===nrm(e.place)})&&(stayFor(e.date)||{}).id===s.id))){var dd=e.date<s.start?s.start:e.date;if(!seen[e.type]||dd<seen[e.type])seen[e.type]=dd}});
   Object.keys(seen).forEach(function(ty){tags.push(h('span',{class:'tag t-'+ty,role:'link',tabindex:'0',style:'cursor:pointer',text:typeLabel(ty),onclick:function(ev){ev.stopPropagation();ev.preventDefault();ui.date=seen[ty];ui.view='day';render();window.scrollTo(0,0);setTimeout(function(){var c=document.querySelector('.ev.t-'+ty);if(c)c.scrollIntoView({behavior:'smooth',block:'center'})},150)}}))});
   root.append(h('div',{style:'display:flex;flex-direction:column;gap:4px'},
    h('button',{class:'stay'+(cur&&cur.id===s.id?' cur':''),type:'button',onclick:function(){ui.date=s.start;ui.view='day';render();window.scrollTo(0,0)}},
-    h('div',{class:'n',text:tr(s.place)}),h('div',{class:'days',text:s.start===s.end?T('Travel'):(lang==='gu'?(visits>1?'કુલ ':'')+dg(n)+' દિવસ':n+' days'+(visits>1?' in total':''))}),
+    h('div',{class:'n',text:tr(s.place)}),h('div',{class:'days',text:s.start===s.end?T('Travel'):(lang==='gu'?dg(n)+' દિવસ':n+' days')}),
     h('div',{class:'d',text:(s.start===s.end?fmt(s.start,yo):fmt(s.start)+(lang==='gu'?' થી ':' to ')+fmt(s.end,yo))+(s.region?' · '+tr(s.region):'')}),h('span'),
     tags.length?h('div',{class:'tags'},tags):null),
    (ui.canEdit&&canEditTour(t))?h('div',{class:'row'},h('button',{class:'btn sm',type:'button',onclick:function(){openStay(t,s)}},'Edit')):null))});
