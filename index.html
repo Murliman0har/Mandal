@@ -808,6 +808,13 @@ function openStay(t,s){
    else state.events.push({id:'e'+base+'a'+ty.charAt(0)+(sl||'')+(k++),type:ty,title:'',date:d,endDate:'',start:st,end:en,place:q.place,saints:saintsOn(d).map(function(z){return z.id}),vakta:'',shastra:'',portion:'',session:'',car:'',from:'',to:'',driver:'',phone:'',flight:'',yajman:'',notes:'',photos:[],auto:tag})});
   state.events.sort(function(a,b){return a.date<b.date?-1:a.date>b.date?1:0})}
  function field(id,label,type,val){var el=h('input',{type:type,value:val||''});F[id]=el;el.id='sf_'+id;return h('div',{class:'f'},h('label',{for:'sf_'+id,text:label}),el)}
+ function timesOf(sid,ty,k,sl){var l=state.events.filter(function(x){return x.auto===sid+':'+ty+(sl||'')}).sort(function(a,b){return a.date<b.date?-1:1});return l.length?(l[0][k]||''):''}
+ var filled=false;
+ function fillTimes(place){var src=null;t.stays.forEach(function(x){if(x.id!==q.id&&nrm(x.place)===nrm(place)&&state.events.some(function(e){return e.auto&&e.auto.indexOf(x.id+':')===0})&&(!src||x.start>src.start))src=x});
+  var ids=['aS','aE','kS','kE','a2S','a2E','k2S','k2E'];
+  if(!src){if(filled)ids.forEach(function(i){if(F[i])F[i].value=''});filled=false;return}
+  filled=true;
+  [['aS','pothiyatra','start',''],['aE','pothiyatra','end',''],['kS','katha','start',''],['kE','katha','end',''],['a2S','pothiyatra','start','2'],['a2E','pothiyatra','end','2'],['k2S','katha','start','2'],['k2E','katha','end','2']].forEach(function(r){if(F[r[0]])F[r[0]].value=timesOf(src.id,r[1],r[2],r[3])})}
  var seenP={},plOpts=[];
  t.stays.forEach(function(x){var k=nrm(x.place);if(x.place&&x.place!=='India'&&!seenP[k]){seenP[k]=x;plOpts.push([x.place,x.place])}});
  var placeF=field('place','Mandir / place','text',q.place),placeSel=null;
@@ -818,7 +825,7 @@ function openStay(t,s){
   F.place.hidden=!(placeSel.value==='__new');
   placeSel.addEventListener('change',function(){var v=placeSel.value;
    if(v==='__new'){F.place.hidden=false;F.place.value='';F.place.focus()}
-   else{F.place.hidden=true;F.place.value=v;var m=seenP[nrm(v)];if(m&&m.region&&F.region&&!F.region.value)F.region.value=m.region}})}
+   else{F.place.hidden=true;F.place.value=v;var m=seenP[nrm(v)];if(m&&m.region&&F.region&&!F.region.value)F.region.value=m.region;fillTimes(v)}})}
  var modal=h('div',{class:'modal',role:'dialog','aria-modal':'true','aria-label':isNew?'Add mandir':'Edit mandir'});
  var delBtn=delIcon(h('button',{class:'btn danger',type:'button',title:T('Delete'),'aria-label':T('Delete'),style:'padding:6px 9px;line-height:0',onclick:function(){if(!confirm('Delete this stay?'))return;t.stays=t.stays.filter(function(x){return x.id!==q.id});state.events=state.events.filter(function(x){return !(x.auto&&x.auto.indexOf(q.id+':')===0)});syncStays();ui.dirty++;modal.remove();render()}}));
  var form=h('form',{class:'form',onsubmit:function(x){x.preventDefault();
