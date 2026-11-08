@@ -808,19 +808,28 @@ function openStay(t,s){
    else state.events.push({id:'e'+base+'a'+ty.charAt(0)+(sl||'')+(k++),type:ty,title:'',date:d,endDate:'',start:st,end:en,place:q.place,saints:saintsOn(d).map(function(z){return z.id}),vakta:'',shastra:'',portion:'',session:'',car:'',from:'',to:'',driver:'',phone:'',flight:'',yajman:'',notes:'',photos:[],auto:tag})});
   state.events.sort(function(a,b){return a.date<b.date?-1:a.date>b.date?1:0})}
  function field(id,label,type,val){var el=h('input',{type:type,value:val||''});F[id]=el;el.id='sf_'+id;return h('div',{class:'f'},h('label',{for:'sf_'+id,text:label}),el)}
- var seenP={},placeList=h('datalist',{id:'sf_places'});
- t.stays.forEach(function(x){var k=nrm(x.place);if(x.place&&x.place!=='India'&&!seenP[k]){seenP[k]=x;placeList.append(h('option',{value:x.place}))}});
+ var seenP={},plOpts=[];
+ t.stays.forEach(function(x){var k=nrm(x.place);if(x.place&&x.place!=='India'&&!seenP[k]){seenP[k]=x;plOpts.push([x.place,x.place])}});
+ var placeF=field('place','Mandir / place','text',q.place),placeSel=null;
+ if(plOpts.length){
+  placeSel=(function(opts,val){var e=h('select',{});opts.forEach(function(o){var op=h('option',{value:o[0],text:o[1]});if(o[0]===val)op.selected=true;e.append(op)});return e})([['','Choose a mandir']].concat(plOpts,[['__new','+ New mandir (type the name)']]),(q.place&&seenP[nrm(q.place)])?seenP[nrm(q.place)].place:(q.place?'__new':''));
+  placeSel.setAttribute('aria-label','Mandir');placeF.insertBefore(placeSel,F.place);
+  F.place.placeholder='Type the new mandir name';F.place.setAttribute('autocomplete','off');
+  F.place.hidden=!(placeSel.value==='__new');
+  placeSel.addEventListener('change',function(){var v=placeSel.value;
+   if(v==='__new'){F.place.hidden=false;F.place.value='';F.place.focus()}
+   else{F.place.hidden=true;F.place.value=v;var m=seenP[nrm(v)];if(m&&m.region&&F.region&&!F.region.value)F.region.value=m.region}})}
  var modal=h('div',{class:'modal',role:'dialog','aria-modal':'true','aria-label':isNew?'Add mandir':'Edit mandir'});
  var delBtn=delIcon(h('button',{class:'btn danger',type:'button',title:T('Delete'),'aria-label':T('Delete'),style:'padding:6px 9px;line-height:0',onclick:function(){if(!confirm('Delete this stay?'))return;t.stays=t.stays.filter(function(x){return x.id!==q.id});state.events=state.events.filter(function(x){return !(x.auto&&x.auto.indexOf(q.id+':')===0)});syncStays();ui.dirty++;modal.remove();render()}}));
  var form=h('form',{class:'form',onsubmit:function(x){x.preventDefault();
-  q.place=F.place.value.trim();if(!q.place){F.place.focus();return}
+  q.place=F.place.value.trim();if(!q.place){(placeSel&&placeSel.value!=='__new'?placeSel:F.place).focus();return}
   q.region=F.region.value.trim();q.start=F.start.value||q.start;q.end=F.end.value&&F.end.value>=q.start?F.end.value:q.start;
   var i=t.stays.findIndex(function(y){return y.id===q.id});if(i>-1)t.stays[i]=q;else t.stays.push(q);
   if(q.start<t.start)t.start=q.start;if(q.end>t.end)t.end=q.end;
   syncDaily('pothiyatra',F.aS.value,F.aE.value);syncDaily('pothiyatra',F.a2S.value,F.a2E.value,'2');syncDaily('katha',F.kS.value,F.kE.value);syncDaily('katha',F.k2S.value,F.k2E.value,'2');
   syncStays();ui.dirty++;modal.remove();render()}},
   h('div',{class:'row',style:'align-items:center;gap:10px'},isNew?null:delBtn,h('h2',{style:'margin:0',text:isNew?'Add mandir':'Edit mandir'})),
-  field('place','Mandir / place','text',q.place),placeList,field('region','Region (optional)','text',q.region),
+  placeF,field('region','Region (optional)','text',q.region),
   h('div',{class:'two'},field('start','From date','date',q.start),field('end','To date','date',q.end)),
   h('div',{class:'f'},h('span',{class:'lab',text:'Daily programs'}),h('p',{class:'note',style:'margin:0',text:'Set a time to add that program on every day of this stay, morning and evening. Clear a start time to remove it from all days.'})),
   h('b',{text:'Morning (AM)'}),
@@ -830,9 +839,7 @@ function openStay(t,s){
   h('div',{class:'two'},field('a2S','Aarti Niyam start','time',autoVal('pothiyatra','start','2')),field('a2E','Aarti Niyam end','time',autoVal('pothiyatra','end','2'))),
   h('div',{class:'two'},field('k2S','Katha start','time',autoVal('katha','start','2')),field('k2E','Katha end','time',autoVal('katha','end','2'))),
   h('div',{class:'row'},h('button',{class:'btn pri',type:'submit'},T('Done')),h('button',{class:'btn',type:'button',onclick:function(){modal.remove()}},T('Cancel'))));
- F.place.setAttribute('list','sf_places');F.place.setAttribute('autocomplete','off');F.place.placeholder='Pick a mandir from this tour or type a new one';
- F.place.addEventListener('change',function(){var m=seenP[nrm(F.place.value)];if(m){F.place.value=m.place;if(!F.region.value&&m.region)F.region.value=m.region}});
- modal.append(form);document.body.append(modal);backable(modal);F.place.focus()}
+ modal.append(form);document.body.append(modal);backable(modal);if(placeSel&&!placeSel.value)placeSel.focus();else if(!F.place.hidden)F.place.focus()}
 
 var SUMORDER=['parayan','katha','padramani','vastu','sabha','pravachan','outing','flight','car','other'];
 function rangeLabel(e){return e.endDate&&e.endDate!==e.date?fmt(e.date)+' – '+fmt(e.endDate):fmt(e.date)}
