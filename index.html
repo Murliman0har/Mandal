@@ -988,17 +988,18 @@ function standalone(){return (window.matchMedia&&matchMedia('(display-mode: stan
 function b64u(s){var p='='.repeat((4-s.length%4)%4),b=(s+p).replace(/-/g,'+').replace(/_/g,'/'),r=atob(b),o=new Uint8Array(r.length);for(var i=0;i<r.length;i++)o[i]=r.charCodeAt(i);return o}
 ui.rem='';ui.remMsg='';
 function remSupported(){return 'serviceWorker' in navigator&&'PushManager' in window&&'Notification' in window}
+function devTz(){try{return Intl.DateTimeFormat().resolvedOptions().timeZone||''}catch(x){return ''}}
 function remRefresh(){
  if(!remSupported()){ui.rem='unsupported';return Promise.resolve()}
  if(Notification.permission==='denied'){ui.rem='denied';return Promise.resolve()}
- return navigator.serviceWorker.ready.then(function(reg){return reg.pushManager.getSubscription()}).then(function(sub){ui.rem=sub&&Notification.permission==='granted'?'on':'off';if(ui.rem==='on'&&!ui.offline&&getPass())rpc('save_push_sub',{p_passcode:getPass(),p_sub:sub.toJSON()}).catch(function(){})}).catch(function(){ui.rem='off'})}
+ return navigator.serviceWorker.ready.then(function(reg){return reg.pushManager.getSubscription()}).then(function(sub){ui.rem=sub&&Notification.permission==='granted'?'on':'off';if(ui.rem==='on'&&!ui.offline&&getPass()){var tz0=devTz();rpc('save_push_sub',{p_passcode:getPass(),p_sub:sub.toJSON(),p_tz:tz0}).then(function(){ui.sentTz=tz0}).catch(function(){})}}).catch(function(){ui.rem='off'})}
 function remOn(){
  ui.remMsg='';
  if(isIOS()&&!standalone()){ui.remMsg='On iPhone, first tap Share, then Add to Home Screen, and open the app from there.';render();return}
  Notification.requestPermission().then(function(p){
   if(p!=='granted'){ui.remMsg=p==='denied'?'Notifications are blocked. Allow them in the browser settings for this site.':'';return remRefresh()}
   return navigator.serviceWorker.ready.then(function(reg){return reg.pushManager.getSubscription().then(function(s){return s||reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:b64u(VAPID_PUB)})})})
-  .then(function(sub){return rpc('save_push_sub',{p_passcode:getPass(),p_sub:sub.toJSON()})}).then(function(){ui.remMsg='Reminders are on.';return remRefresh()})
+  .then(function(sub){var tz1=devTz();return rpc('save_push_sub',{p_passcode:getPass(),p_sub:sub.toJSON(),p_tz:tz1}).then(function(){ui.sentTz=tz1})}).then(function(){ui.remMsg='Reminders are on.';return remRefresh()})
  }).catch(function(){ui.remMsg='Could not turn on reminders. Check your connection and try again.';return remRefresh()}).then(render)}
 function remOff(){
  navigator.serviceWorker.ready.then(function(reg){return reg.pushManager.getSubscription()}).then(function(sub){
@@ -1080,7 +1081,7 @@ function signOut(){
  Promise.race([stopPush,new Promise(function(r){setTimeout(r,4000)})]).then(function(){
   setPass('');try{localStorage.removeItem('tourCache')}catch(x){}
   state={tripStart:state.tripStart,tripEnd:state.tripEnd,stays:[],events:[],saints:[]};
-  picCache={};ui.authed=false;ui.canEdit=false;ui.editTours=null;ui.offline=false;ui.role='';ui.admin=false;ui.gname='';ui.rem='';ui.remMsg='';ui.sideOpen=false;ui.dirty=0;ui.msg='';ui.gateMsg='';
+  clearDraft();picCache={};ui.authed=false;ui.canEdit=false;ui.editTours=null;ui.offline=false;ui.role='';ui.admin=false;ui.gname='';ui.rem='';ui.remMsg='';ui.sideOpen=false;ui.dirty=0;ui.msg='';ui.gateMsg='';
   render()})}
 function render(){
  var root=$('#root');root.textContent='';
@@ -1106,7 +1107,7 @@ function render(){
  if(ui.canEdit){root.append(h('div',{class:'bar'},
   canEditDate(ui.date)?h('button',{class:'btn',type:'button',onclick:function(){openForm(null)}},T('Add event')):h('span',{class:'note',style:'align-self:center',text:lang==='gu'?'આ તારીખ તમારી યાત્રાની બહાર છે.':'This date is outside the tours you can edit.'}),
   (ui.dirty||ui.saving)?h('button',{class:'btn pri',type:'button',disabled:!ui.dirty||ui.saving,onclick:save},ui.saving?T('Saving'):(ui.dirty?T('Save and publish')+' ('+dg(ui.dirty)+')':T('No changes'))):null,
-  ui.msg?h('span',{class:'note',style:'align-self:center',text:ui.msg}):null))}
+  ui.msg?h('span',{class:'note',style:'align-self:center',text:ui.msg}):((ui.offline&&ui.canEdit)?h('span',{class:'note',style:'align-self:center',text:lang==='gu'?'ઑફલાઇન. ફેરફાર ફોનમાં સાચવાશે.':'Offline. Changes are kept on this phone.'}):null)))}
 }
 
 function durOf(e){if(e.dur)return e.dur;if(e.start&&e.end){var d=toMin(e.end)-toMin(e.start);if(d===5||d===10||d===15)return d}return 10}
@@ -1474,16 +1475,49 @@ function uploadPic(b){
 ui.assets={upload:uploadPic};
 ui.authed=false;ui.busy=false;ui.gateMsg='';
 function normState(){if(!state.tours){var st0=state.stays||[];state.tours=st0.length?[{id:'london',name:'London Tour',start:st0[0].start,end:st0[st0.length-1].end,saints:state.saints.filter(function(x){return !x.guest}).map(function(x){return x.id}),stays:st0}]:[]}syncStays()}
+
+// ---- offline editing: changes are kept on the phone and merged into the live program when back online ----
+var DRAFT_KEY='tourDraft';
+function readDraft(pass){try{var d=JSON.parse(localStorage.getItem(DRAFT_KEY)||'null');return d&&d.pass===pass&&d.state&&d.base?d:null}catch(x){return null}}
+function stashDraft(){try{if(!ui.canEdit||!ui.dirty)return;localStorage.setItem(DRAFT_KEY,JSON.stringify({pass:getPass(),base:ui.base||'',state:state,t:Date.now()}))}catch(x){}}
+function clearDraft(){try{localStorage.removeItem(DRAFT_KEY)}catch(x){}}
+function mergeList(b,o,t){
+ var all=b.concat(o,t);if(all.some(function(x){return !x||x.id===undefined||x.id===null}))return o;
+ var bm={},om={};b.forEach(function(x){bm[x.id]=x});o.forEach(function(x){om[x.id]=x});
+ var res=t.slice(),idx={};res.forEach(function(x,i){idx[x.id]=i});
+ o.forEach(function(x){var bx=bm[x.id];
+  if(!bx||JSON.stringify(bx)!==JSON.stringify(x)){if(idx[x.id]!==undefined)res[idx[x.id]]=x;else{idx[x.id]=res.length;res.push(x)}}});
+ b.forEach(function(x){if(!om[x.id]){var i=res.findIndex(function(y){return y.id===x.id});if(i>-1)res.splice(i,1)}});
+ return res}
+function mergeState(baseS,ours,theirs){
+ var out=JSON.parse(JSON.stringify(theirs));
+ ['events','tours','saints'].forEach(function(k){out[k]=mergeList(baseS[k]||[],ours[k]||[],theirs[k]||[])});
+ Object.keys(ours).forEach(function(k){if(['events','tours','saints','stays','tripStart','tripEnd'].indexOf(k)>-1)return;if(JSON.stringify(ours[k])!==JSON.stringify(baseS[k]))out[k]=ours[k]});
+ return out}
+function isNetErr(err){return err instanceof TypeError||(err&&err.message==='timeout')}
+function syncNow(){
+ var pass=getPass();if(!pass||!ui.canEdit||ui.saving||!ui.dirty)return;
+ return rpc('get_tour_state',{p_passcode:pass}).then(function(res){
+  if(!res||!res.data||!res.data.events)throw {message:'empty'};
+  try{state=mergeState(JSON.parse(ui.base||'{}'),state,res.data)}catch(x){}
+  normState();ui.base=JSON.stringify(res.data);ui.fromDraft=true;save()}).catch(function(){})}
+window.addEventListener('online',function(){
+ if(!ui.authed)return;
+ if(ui.offline)enter(getPass());else if(ui.canEdit&&ui.dirty>0)syncNow()});
+document.addEventListener('visibilitychange',function(){
+ if(document.visibilityState!=='visible'||!ui.authed||ui.offline)return;
+ if(ui.canEdit&&ui.dirty>0&&ui.waiting)syncNow();
+ if(ui.rem==='on'&&devTz()!==ui.sentTz)remRefresh()});
 function enter(pass){
  ui.gateMsg='';ui.busy=true;render();
  return Promise.race([rpc('get_tour_state',{p_passcode:pass}),new Promise(function(_,rj){setTimeout(function(){rj({message:'timeout'})},10000)})]).then(function(res){
   if(!res||!res.data||!res.data.events)throw {message:'empty'};
-  setPass(pass);try{localStorage.setItem('tourCache',JSON.stringify({pass:pass,res:res}))}catch(x){}state=res.data;normState();ui.role=res.role;ui.admin=!!res.admin;ui.gname=res.name||'';ui.gsaint=res.saint_id||'';if(ui.gsaint&&ui.viaLink){ui.sel=[ui.gsaint];saveSel()}ui.viaLink=false;ui.editTours=(res.role==='editor'&&Array.isArray(res.edit_tours))?res.edit_tours:null;ui.canEdit=res.role==='editor'&&(!scoped()||ui.editTours.length>0);if(scoped()&&ui.editTours.length===1&&!ui.tourSel){ui.tourSel=ui.editTours[0];try{localStorage.setItem('tourSel',ui.tourSel)}catch(x){}}ui.authed=true;ui.autoNow=true;ui.busy=false;ui.date=calClamp(today());render();loadTithi();remRefresh().then(render);prefetchPics()
+  setPass(pass);try{localStorage.setItem('tourCache',JSON.stringify({pass:pass,res:res}))}catch(x){}state=res.data;normState();ui.role=res.role;ui.admin=!!res.admin;ui.gname=res.name||'';ui.gsaint=res.saint_id||'';if(ui.gsaint&&ui.viaLink){ui.sel=[ui.gsaint];saveSel()}ui.viaLink=false;ui.editTours=(res.role==='editor'&&Array.isArray(res.edit_tours))?res.edit_tours:null;ui.canEdit=res.role==='editor'&&(!scoped()||ui.editTours.length>0);if(scoped()&&ui.editTours.length===1&&!ui.tourSel){ui.tourSel=ui.editTours[0];try{localStorage.setItem('tourSel',ui.tourSel)}catch(x){}}ui.base=JSON.stringify(state);ui.offline=false;var dr=ui.canEdit?readDraft(pass):null;if(dr){try{state=mergeState(JSON.parse(dr.base),dr.state,state);normState();ui.dirty=1;ui.pendingSync=true}catch(x){}}ui.authed=true;ui.autoNow=true;ui.busy=false;ui.date=calClamp(today());render();loadTithi();remRefresh().then(render);prefetchPics();if(ui.pendingSync){ui.pendingSync=false;ui.fromDraft=true;save()}
  }).catch(function(err){
   ui.busy=false;ui.authed=false;
   if(/bad_passcode/.test(JSON.stringify(err||{}))){setPass('');try{localStorage.removeItem('tourCache')}catch(x){}ui.gateMsg=ui.viaLink?'This link is not active. Please ask for a new link.':'Wrong password.'}
   else{var c=null;try{c=JSON.parse(localStorage.getItem('tourCache')||'null')}catch(x){}
-   if(c&&c.pass===pass&&c.res&&c.res.data){state=c.res.data;normState();ui.role='reader';ui.canEdit=false;ui.authed=true;ui.autoNow=true;ui.offline=true;ui.date=calClamp(today());render();return}
+   if(c&&c.pass===pass&&c.res&&c.res.data){state=c.res.data;normState();ui.base=JSON.stringify(state);var cr=c.res.role==='editor';ui.role=cr?'editor':'reader';ui.editTours=(cr&&Array.isArray(c.res.edit_tours))?c.res.edit_tours:null;ui.canEdit=cr&&(!scoped()||ui.editTours.length>0);ui.admin=false;var dr2=ui.canEdit?readDraft(pass):null;if(dr2){state=dr2.state;normState();ui.dirty=1;ui.base=dr2.base;ui.waiting=true}ui.authed=true;ui.autoNow=true;ui.offline=true;ui.date=calClamp(today());render();return}
    ui.gateMsg='Could not open the program. Check your connection and try again.'}
   render()})}
 function drawGate(){
@@ -1499,12 +1533,17 @@ function drawGate(){
 function save(){
  var pass=getPass();if(!pass||!ui.canEdit)return;
  ui.saving=true;ui.msg='';render();
- rpc('save_tour_state',{p_passcode:pass,p_data:state}).then(function(){try{localStorage.setItem('tourCache',JSON.stringify({pass:pass,res:{data:state,role:ui.role}}));prefetchPics()}catch(x){}ui.dirty=0;ui.saving=false;ui.msg='Saved';render()}).catch(function(err){ui.saving=false;ui.msg=/bad_passcode/.test(JSON.stringify(err||{}))?'Wrong password.':'Could not save.';render()})}
+ rpc('save_tour_state',{p_passcode:pass,p_data:state}).then(function(){try{localStorage.setItem('tourCache',JSON.stringify({pass:pass,res:{data:state,role:ui.role,edit_tours:ui.editTours}}));prefetchPics()}catch(x){}clearDraft();ui.base=JSON.stringify(state);ui.dirty=0;ui.saving=false;ui.waiting=false;ui.msg=ui.fromDraft?(lang==='gu'?'ઑફલાઇન ફેરફાર અપડેટ થયા':'Offline changes sent'):'Saved';ui.fromDraft=false;render()}).catch(function(err){
+  ui.saving=false;ui.fromDraft=false;stashDraft();
+  if(/bad_passcode/.test(JSON.stringify(err||{}))){ui.msg='Wrong password.'}
+  else if(isNetErr(err)||navigator.onLine===false){ui.waiting=true;ui.msg=lang==='gu'?'ઇન્ટરનેટ નથી. ફેરફાર ફોનમાં સાચવ્યા છે, ઑનલાઇન થતાં અપડેટ થશે.':'No connection. Your changes are kept on this phone and will update when you are online.'}
+  else ui.msg='Could not save.';
+  render()})}
 function fitRails(){[].slice.call(document.querySelectorAll('.ev.t-pravachan .rail')).forEach(function(r){var lo=9,hi=15,w=r.clientWidth;if(!w)return;
   while(hi-lo>.25){var mid=(lo+hi)/2;r.style.fontSize=mid+'px';if(r.scrollWidth>r.clientWidth+.5)hi=mid;else lo=mid}
   r.style.fontSize=lo+'px'})}
 window.addEventListener('resize',fitRails);
-var _render=render;render=function(){if(!ui.authed){drawGate();return}_render();fitRails();requestAnimationFrame(fitRails)};
+var _render=render;render=function(){if(!ui.authed){drawGate();return}_render();if(ui.canEdit&&ui.dirty>0&&!ui.saving)stashDraft();fitRails();requestAnimationFrame(fitRails)};
 ui.date=calClamp(today());
 (function(){var g='';try{g=(new URLSearchParams(location.search).get('g')||'').trim().toLowerCase()}catch(x){}
  if(g){ui.viaLink=true;setPass(g);try{history.replaceState(null,'',location.pathname)}catch(x){}}
