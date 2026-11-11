@@ -1288,7 +1288,7 @@ function openForm(ev){
   field('type',T('Type'),typeSel),
   grp('oth',[field('otherLabel','Write your own label (shown instead of "Other")',inp('otherLabel','text',e.otherLabel))]),
   field('title',T('Title'),inp('title','text',e.title)),
-  field('titleGu','Title in Gujarati (shown when the app is in Gujarati)',inp('titleGu','text',e.titleGu)),
+  field('titleGu','Title in Gujarati (shown when the app is in Gujarati)',inp('titleGu','text',e.titleGu),h('p',{class:'note',style:'margin:2px 0 0',text:'Filled in automatically from the English title. Change it if it is wrong.'})),
   h('div',{class:'two'},field('date',T('Date'),inp('date','date',e.date)),field('endDate',T('Last day (multi-day only)'),inp('endDate','date',e.endDate))),
   h('div',{class:'two'},field('start',T('Start time'),inp('start','time',e.start)),field('end',T('End time'),inp('end','time',e.end))),
   h('div',{class:'f'},h('label',{text:'Time zone of these times'}),tzSelE,h('p',{class:'note',style:'margin:2px 0 0',text:'Leave on Auto to use the place where the saints are that day. Change it only on a travel day.'})),
@@ -1318,6 +1318,17 @@ function openForm(ev){
   var car=t==='car';wrap(F.title).hidden=car;wrap(F.titleGu).hidden=car;wrap(F.endDate).hidden=ser||pv||car;wrap(F.start).parentNode.hidden=ser;wrap(F.session).hidden=ser;wrap(F.vakta).hidden=ser;wrap(F.portion).hidden=ser;
   var dl=wrap(F.date).querySelector('label');if(dl)dl.textContent=ser?'Start date':T('Date')}
  typeSel.addEventListener('change',sync2);pkindSel.addEventListener('change',sync2);sync2();
+ var guLast='',guTmr=null,guReq=0;
+ function guKnown(x){var o=lang;lang='gu';try{return tr(x)}finally{lang=o}}
+ function guFill(v){
+  var cur=F.titleGu.value.trim();if(cur&&cur!==guLast)return;
+  if(!v||/[^\u0000-\u024F]/.test(v)){if(!v){F.titleGu.value='';guLast=''}return}
+  var k=guKnown(v);if(k&&k!==v){F.titleGu.value=k;guLast=k;return}
+  var id=++guReq;
+  try{fetch('https://inputtools.google.com/request?text='+encodeURIComponent(v)+'&itc=gu-t-i0-und&num=1&cp=0&cs=1&ie=utf-8&oe=utf-8&app=mandal').then(function(r){return r.json()}).then(function(j){
+   if(id!==guReq)return;var t=j&&j[0]==='SUCCESS'&&j[1]&&j[1][0]&&j[1][0][1]&&j[1][0][1][0];
+   var c2=F.titleGu.value.trim();if(t&&(!c2||c2===guLast)){F.titleGu.value=t;guLast=t}}).catch(function(){})}catch(x){}}
+ F.title.addEventListener('input',function(){clearTimeout(guTmr);var v=F.title.value.trim();guTmr=setTimeout(function(){guFill(v)},600)});
  tourSel.addEventListener('change',function(){applyTour(isNew)});
  if(tourSel.value)applyTour(isNew);
  function commit(){
