@@ -571,9 +571,55 @@ function saintsOn(d){var ids={};(state.tours||[]).forEach(function(t){if(t.start
 function vaktaList(cur,d){d=d||ui.date;var ids={},set=false;(state.tours||[]).forEach(function(t){if(t.start<=d&&d<=t.end&&t.vaktas&&t.vaktas.length){set=true;t.vaktas.forEach(function(i){ids[i]=1})}});
  var on=saintsOn(d);return state.saints.filter(function(s){if(s.id===cur)return true;if(on.indexOf(s)<0)return false;return set?!!ids[s.id]:s.role==='Vakta'})}
 function evsOn(d){return dayAll(d).filter(hasSel)}
+// ---- time zones: stored times are always local to the event's place. Only the dashboard shows them in the viewer's own time. ----
+var TZLIST=[['Europe/London','London / UK'],['Europe/Stockholm','Sweden'],['Africa/Banjul','Gambia'],['Africa/Dakar','Senegal'],['Asia/Dubai','Dubai / UAE'],['Asia/Kolkata','India'],['Australia/Perth','Perth'],['Australia/Adelaide','Adelaide'],['Australia/Melbourne','Melbourne'],['Australia/Sydney','Sydney'],['Australia/Brisbane','Brisbane']];
+function guessTz(place,region){var r=(String(place||'')+' '+String(region||'')).toLowerCase();
+ if(/perth/.test(r))return 'Australia/Perth';if(/adelaide/.test(r))return 'Australia/Adelaide';if(/melbourne/.test(r))return 'Australia/Melbourne';if(/sydney/.test(r))return 'Australia/Sydney';if(/brisbane/.test(r))return 'Australia/Brisbane';
+ if(/\buk\b|wales|england|london|bradford|harrow|wilsden|stanmore|woolwich|oldham|bolton|cardiff|\bisso\b/.test(r))return 'Europe/London';
+ if(/sweden|mariestad|j.nk.ping|stockholm/.test(r))return 'Europe/Stockholm';
+ if(/gambia|banjul/.test(r))return 'Africa/Banjul';if(/senegal|dakar/.test(r))return 'Africa/Dakar';
+ if(/\buae\b|dubai/.test(r))return 'Asia/Dubai';if(/india/.test(r))return 'Asia/Kolkata';
+ return ''}
+function tzOfStay(st){return st?(st.tz||guessTz(st.place,st.region)):''}
+function stayTzOn(d){var m=null;(state.stays||[]).forEach(function(x){if(x.start<=d&&d<=x.end)m=x});return tzOfStay(m)}
+function evTz(e){return e.tz||stayTzOn(e.date)}
+function tzOff(tz,ms){var p={};new Intl.DateTimeFormat('en-US',{timeZone:tz,hourCycle:'h23',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit'}).formatToParts(new Date(ms)).forEach(function(x){p[x.type]=x.value});return (Date.UTC(+p.year,+p.month-1,+p.day,+p.hour,+p.minute,+p.second)-ms)/60000}
+function toUtc(date,time,tz){var a=date.split('-').map(Number),b=time.split(':').map(Number),g=Date.UTC(a[0],a[1]-1,a[2],b[0],b[1]),u=g-tzOff(tz,g)*60000;u=g-tzOff(tz,u)*60000;return u}
+function fromUtc(ms,tz){var o=tzOff(tz,ms),d=new Date(ms+o*60000),pd=function(n){return (n<10?'0':'')+n};return {date:d.getUTCFullYear()+'-'+pd(d.getUTCMonth()+1)+'-'+pd(d.getUTCDate()),time:pd(d.getUTCHours())+':'+pd(d.getUTCMinutes())}}
+try{ui.timeMode=localStorage.getItem('timeMode')||''}catch(x){ui.timeMode=''}
+function setTimeMode(m){ui.timeMode=m;try{if(m)localStorage.setItem('timeMode',m);else localStorage.removeItem('timeMode')}catch(x){}render()}
+function convActive(){return ui.timeMode!=='program'&&!!devTz()}
+var VC=false,CV={};
+function conv(e){
+ if(!e.start||(e.endDate&&e.endDate!==e.date))return null;
+ var te=evTz(e),tv=devTz();if(!te||!tv||te===tv)return null;
+ var key=[e.id,e.date,e.start,e.end,te,tv].join('|');if(key in CV)return CV[key];
+ var r=null;try{var a=fromUtc(toUtc(e.date,e.start,te),tv),en='';
+  if(e.end){var d2=toMin(e.end)>toMin(e.start)?e.date:addDays(e.date,1);en=fromUtc(toUtc(d2,e.end,te),tv).time}
+  r={date:a.date,start:a.time,end:en}}catch(x){r=null}
+ CV[key]=r;return r}
+function dt(e){var c=VC?conv(e):null;return c||{start:e.start,end:e.end}}
+function evsOnView(d){
+ if(!VC)return evsOn(d);
+ var out=[],seen={};
+ [addDays(d,-1),d,addDays(d,1)].forEach(function(x){dayAll(x).filter(hasSel).forEach(function(e){
+  if(seen[e.id])return;var c=conv(e);
+  if(c?c.date===d:(e.date<=d&&d<=(e.endDate||e.date))){seen[e.id]=1;out.push(e)}})});
+ return out}
+function tzSelect(val,autoLabel){var el=h('select',{});[['',autoLabel]].concat(TZLIST).forEach(function(o){var op=h('option',{value:o[0],text:o[1]});if(o[0]===val)op.selected=true;el.append(op)});return el}
+function tzShort(tz){var m=TZLIST.find(function(x){return x[0]===tz});return m?m[1]:String(tz||'').replace(/^.*\//,'').replace(/_/g,' ')}
+function dayNote(d){
+ var pt=stayTzOn(d),vt=devTz(),differ=pt&&vt&&pt!==vt,gu=lang==='gu';
+ if(!differ)return h('p',{class:'note',text:T('Times are local to where the saints are. Refresh the page to see the latest changes.')});
+ var on=convActive();
+ return h('p',{class:'note'},
+  on?('Showing times in your phone’s time ('+tzShort(vt)+'). The program is in '+tzShort(pt)+' time. ')
+     :('Showing the program’s own times ('+tzShort(pt)+'). '),
+  h('button',{class:'btn sm',type:'button',onclick:function(){setTimeMode(on?'program':'')}},on?'Show program time':'Show my time'))}
+
 function toMin(t){if(!t)return null;var p=t.split(':');return +p[0]*60+ +p[1]}
-function sortKey(e){var m=toMin(e.start);if(m!=null)return m;if(e.session==='morning')return 540;if(e.session==='evening')return 1080;return -1}
-function timeLabel(e){if(e.start&&e.end)return[fmtTime(e.start),'\u2013 '+fmtTime(e.end)];if(e.start)return[fmtTime(e.start),''];if(e.session==='morning')return[T('Morning'),T('time TBC')];if(e.session==='evening')return[T('Evening'),T('time TBC')];return[T('All day'),'']}
+function sortKey(e){var m=toMin(dt(e).start);if(m!=null)return m;if(e.session==='morning')return 540;if(e.session==='evening')return 1080;return -1}
+function timeLabel(e){var q0=dt(e);if(q0.start&&q0.end)return[fmtTime(q0.start),'\u2013 '+fmtTime(q0.end)];if(q0.start)return[fmtTime(q0.start),''];if(e.session==='morning')return[T('Morning'),T('time TBC')];if(e.session==='evening')return[T('Evening'),T('time TBC')];return[T('All day'),'']}
 function today(){return iso(new Date())}
 var CAL_MIN='2010-01-01',CAL_MAX='2027-12-31';
 function calClamp(d){return d<CAL_MIN?CAL_MIN:d>CAL_MAX?CAL_MAX:d}
@@ -590,7 +636,7 @@ function fxEls(t){var f=FX[t],o=[],i;
  for(i=1;i<=f[1];i++)o.push(h('i',{class:'fx fx-'+t+' f'+i,'aria-hidden':'true',text:f[0]}));return o}
 function flightLine(e,isNow){var p=isNow?+nowPct(e):0;if(!e.from&&!e.to)return null;
  return h('div',{class:'fline'},h('span',{class:'fp',text:tr(e.from)||'—'}),h('div',{class:'ftrack'},h('i',{class:'fdone',style:'width:'+p+'%'}),h('span',{class:'fplane'+(isNow?' on':''),style:'left:'+p+'%',text:'✈️'})),h('span',{class:'fp',text:tr(e.to)||'—'}))}
-function nowPct(e){var n=new Date(),nm=n.getHours()*60+n.getMinutes()+n.getSeconds()/60,st=toMin(e.start),en=e.end?toMin(e.end):st+90;if(st==null||en<=st)return 0;return Math.max(0,Math.min(100,(nm-st)/(en-st)*100)).toFixed(1)}
+function nowPct(e){var n=new Date(),nm=n.getHours()*60+n.getMinutes()+n.getSeconds()/60,q1=dt(e),st=toMin(q1.start),en=q1.end?toMin(q1.end):st+90;if(st!=null&&en<=st&&VC&&conv(e))en+=1440;if(st==null||en<=st)return 0;return Math.max(0,Math.min(100,(nm-st)/(en-st)*100)).toFixed(1)}
 var STK={pothiyatra:'aarti-sticker.webp',katha:'katha-sticker.webp',vastu:'vastu-sticker.webp',padramani:'padramani-sticker.webp',pravachan:'pravachan-sticker.webp'};
 function showTitle(e){var t=tr(e.title||'').trim();if(!t)return false;var n=function(x){return String(x).toLowerCase().replace(/[^a-z0-9઀-૿]/g,'')},k=n(t);
  return k!==n(typeLabel(e.type))&&k!==n(TYPES[e.type]||'')&&k!==n(e.type)&&k!==n(TG[e.type]||'')}
@@ -649,8 +695,8 @@ function dayView(){
  var tsel=curTour();
  if(tsel)root.append(h('p',{class:'note',style:'margin:0;text-align:center',text:(lang==='gu'?'ફક્ત આ યાત્રા: ':'Showing only: ')+tsel.name+' ('+fmt(tsel.start,{day:'numeric',month:'short'})+' – '+fmt(tsel.end,{day:'numeric',month:'short',year:'numeric'})+')'+((d<tsel.start||d>tsel.end)?(lang==='gu'?' · આ તારીખ આ યાત્રાની બહાર છે':' · this date is outside the tour'):'')}));
  var prs=parOn(d);
- var evs=evsOn(d).slice().sort(function(a,b){return sortKey(a)-sortKey(b)});
- var adays=evs.filter(function(e){return e.type!=='parayan'&&!e.start&&!e.session});
+ var evs=evsOnView(d).slice().sort(function(a,b){return sortKey(a)-sortKey(b)});
+ var adays=evs.filter(function(e){return e.type!=='parayan'&&!dt(e).start&&!e.session});
  evs=evs.filter(function(e){return adays.indexOf(e)<0});
  if(st||prs.length||adays.length){var meta=[];
   if(st){var n=diff(st.start,st.end)+1,k=diff(st.start,d)+1,tr0=(state.tours||[]).find(function(x){return (x.stays||[]).indexOf(st)>-1});
@@ -671,12 +717,13 @@ function dayView(){
      (ui.canEdit&&canEditDate(e.date))?h('button',{class:'btn sm',type:'button',onclick:function(){openForm(e)}},'Edit'):null)})));}
 
  var now=new Date(),nm=now.getHours()*60+now.getMinutes(),isToday=d===today(),nowIds={},nextId=null;
- if(isToday){evs.forEach(function(e){var s=toMin(e.start);if(s==null)return;var en=e.end?toMin(e.end):s+90;if(s<=nm&&nm<en)nowIds[e.id]=1;else if(s>nm&&!nextId)nextId=e.id});}
+ if(isToday){evs.forEach(function(e){var q2=dt(e),s=toMin(q2.start);if(s==null)return;var en=q2.end?toMin(q2.end):s+90;if(en<=s&&conv(e))en+=1440;if(s<=nm&&nm<en)nowIds[e.id]=1;else if(s>nm&&!nextId)nextId=e.id});}
  if(!evs.length&&!adays.length)root.append(h('div',{class:'empty',text:ui.canEdit?T('Nothing planned for this day. Use Add event below.'):T('Nothing planned for this day yet.')}));
  var nn0=Object.keys(nowIds).length;if(nn0>1)root.append(h('div',{class:'row'},h('span',{class:'pill now',text:(lang==='gu'?dg(nn0)+' કાર્યક્રમ ચાલુ છે':nn0+' happening now')})));
  evs.forEach(function(e){root.append(evCard(e,!!nowIds[e.id],e.id===nextId))});
- root.append(h('p',{class:'note',text:T('Times are local to where the saints are. Refresh the page to see the latest changes.')}));
+ root.append(dayNote(d));
  return root}
+var _dayView=dayView;dayView=function(){VC=convActive();try{return _dayView.apply(this,arguments)}finally{VC=false}};
 
 ui.tourOpen='';
 function tourStops(t){var n=0;t.stays.forEach(function(x){if(x.place!=='India')n++});return n}
@@ -819,6 +866,7 @@ function openStay(t,s){
   if(!src){if(filled)ids.forEach(function(i){if(F[i])F[i].value=''});filled=false;return}
   filled=true;
   [['aS','pothiyatra','start',''],['aE','pothiyatra','end',''],['kS','katha','start',''],['kE','katha','end',''],['a2S','pothiyatra','start','2'],['a2E','pothiyatra','end','2'],['k2S','katha','start','2'],['k2E','katha','end','2']].forEach(function(r){if(F[r[0]])F[r[0]].value=timesOf(src.id,r[1],r[2],r[3])})}
+ var tzSelS=tzSelect(q.tz||'','Auto (from the place: '+(tzShort(guessTz(q.place,q.region))||'unknown')+')');
  var seenP={},plOpts=[];
  t.stays.forEach(function(x){var k=nrm(x.place);if(x.place&&x.place!=='India'&&!seenP[k]){seenP[k]=x;plOpts.push([x.place,x.place])}});
  var placeF=field('place','Mandir / place','text',q.place),placeSel=null;
@@ -834,7 +882,7 @@ function openStay(t,s){
  var delBtn=delIcon(h('button',{class:'btn danger',type:'button',title:T('Delete'),'aria-label':T('Delete'),style:'padding:6px 9px;line-height:0',onclick:function(){if(!confirm('Delete this stay?'))return;t.stays=t.stays.filter(function(x){return x.id!==q.id});state.events=state.events.filter(function(x){return !(x.auto&&x.auto.indexOf(q.id+':')===0)});syncStays();ui.dirty++;modal.remove();render()}}));
  var form=h('form',{class:'form',onsubmit:function(x){x.preventDefault();
   q.place=F.place.value.trim();if(!q.place){(placeSel&&placeSel.value!=='__new'?placeSel:F.place).focus();return}
-  q.region=F.region.value.trim();q.start=F.start.value||q.start;q.end=F.end.value&&F.end.value>=q.start?F.end.value:q.start;
+  q.region=F.region.value.trim();if(tzSelS.value)q.tz=tzSelS.value;else delete q.tz;q.start=F.start.value||q.start;q.end=F.end.value&&F.end.value>=q.start?F.end.value:q.start;
   var i=t.stays.findIndex(function(y){return y.id===q.id});if(i>-1)t.stays[i]=q;else t.stays.push(q);
   if(q.start<t.start)t.start=q.start;if(q.end>t.end)t.end=q.end;
   ovr=!isNew&&ovrCk.checked;
@@ -842,6 +890,7 @@ function openStay(t,s){
   syncStays();ui.dirty++;modal.remove();render()}},
   h('div',{class:'row',style:'align-items:center;gap:10px'},isNew?null:delBtn,h('h2',{style:'margin:0',text:isNew?'Add mandir':'Edit mandir'})),
   placeF,field('region','Region (optional)','text',q.region),
+  h('div',{class:'f'},h('label',{text:'Time zone'}),tzSelS,h('p',{class:'note',style:'margin:2px 0 0',text:'Times for this stay are in this zone. Other saints see them in their own phone time.'})),
   h('div',{class:'two'},field('start','From date','date',q.start),field('end','To date','date',q.end)),
   h('div',{class:'f'},h('span',{class:'lab',text:'Daily programs'}),h('p',{class:'note',style:'margin:0',text:'Set a time to add that program on every day of this stay, morning and evening. Clear a start time to remove it from all days.'})),
   h('b',{text:'Morning (AM)'}),
@@ -1129,6 +1178,7 @@ function openForm(ev){
  e.saints.filter(function(i){return i.charAt(0)==='~'}).forEach(function(i){var c=h('input',{type:'checkbox',value:i});c.checked=true;checks.append(h('label',{},c,av(i),i.slice(1)))});
  var tours=(state.tours||[]).filter(canEditTour).sort(function(a,b){return a.start<b.start?-1:a.start>b.start?1:0});
  ui.formTmp=[];
+ var tzSelE=tzSelect(e.tz||'','Auto (place of the stay'+(stayTzOn(e.date||ui.date)?': '+tzShort(stayTzOn(e.date||ui.date)):'')+')');
  function tourFor(dt){var m=tours.find(function(t){return t.start<=dt&&dt<=t.end});return m?m.id:''}
  var initTour=isNew&&curTour()?curTour().id:tourFor(e.date);
  var tourSel=sel([['',lang==='gu'?'કોઈ યાત્રા નહીં':'No tour']].concat(tours.map(function(t){return[t.id,t.name]})),initTour);
@@ -1179,6 +1229,7 @@ function openForm(ev){
   field('title',T('Title'),inp('title','text',e.title)),
   h('div',{class:'two'},field('date',T('Date'),inp('date','date',e.date)),field('endDate',T('Last day (multi-day only)'),inp('endDate','date',e.endDate))),
   h('div',{class:'two'},field('start',T('Start time'),inp('start','time',e.start)),field('end',T('End time'),inp('end','time',e.end))),
+  h('div',{class:'f'},h('label',{text:'Time zone of these times'}),tzSelE,h('p',{class:'note',style:'margin:2px 0 0',text:'Leave on Auto to use the place where the saints are that day. Change it only on a travel day.'})),
   field('place',T('Location'),inp('place','text',e.place)),
   grp('prv',[field('dur','Length of Pravachan',sel([['5','5 minutes'],['10','10 minutes'],['15','15 minutes']],String(durOf(e))))]),
   grp('pk',[field('pkind','Parayan type',pkindSel)]),
@@ -1210,6 +1261,7 @@ function openForm(ev){
  function commit(){
   var t=typeSel.value;
   e.type=t;e.title=F.title.value.trim();e.date=F.date.value;e.endDate=F.endDate.value&&F.endDate.value>F.date.value?F.endDate.value:'';
+  if(tzSelE.value)e.tz=tzSelE.value;else delete e.tz;
   e.start=F.start.value;e.end=F.end.value;e.place=F.place.value.trim();e.notes=F.notes.value.trim();
   e.saints=[].slice.call(checks.querySelectorAll('input')).filter(function(c){return c.checked}).map(function(c){return c.value});
   e.cars=(RIDE.indexOf(typeSel.value)<0||typeSel.value==='pravachan')?[]:(e.cars||[]).map(function(c){return {driver:(c.driver||'').trim(),saints:c.saints.filter(function(i){return e.saints.indexOf(i)>-1})}}).filter(function(c){return c.driver||c.saints.length});
