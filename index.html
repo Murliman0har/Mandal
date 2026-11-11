@@ -572,7 +572,8 @@ function autoTour(){var ts=state.tours||[],cur=ts.find(function(x){return x.id==
 function curTour(){if(!ui.tourSel)return null;var t=(state.tours||[]).find(function(x){return x.id===ui.tourSel});if(!t)ui.tourSel='';return t||null}
 // An event belongs to the tour it was saved under; older events belong to the most specific (shortest) tour whose dates contain them.
 function ownerTour(e){var ts=state.tours||[];if(e.tour&&ts.some(function(t){return t.id===e.tour}))return e.tour;var best=null,bl=1e9;ts.forEach(function(t){if(t.start<=e.date&&e.date<=t.end){var l=diff(t.start,t.end);if(l<bl){bl=l;best=t}}});return best?best.id:''}
-function dayAll(d){var t=curTour();if(t&&(d<t.start||d>t.end))return [];return state.events.filter(function(e){return e.date<=d&&d<=(e.endDate||e.date)&&(!t||ownerTour(e)===t.id)})}
+function finEv(e){var id=ownerTour(e),t=id&&(state.tours||[]).find(function(x){return x.id===id});return !!t&&tourStatus(t)==='finished'}
+function dayAll(d){var t=curTour();if(t&&(d<t.start||d>t.end))return [];return state.events.filter(function(e){return e.date<=d&&d<=(e.endDate||e.date)&&(t?ownerTour(e)===t.id:!finEv(e))})}
 function hasSel(e){return !ui.sel.length||ui.sel.some(function(id){return e.saints.indexOf(id)>-1})}
 function parOn(d){var seen={},out=[];
  dayAll(d).forEach(function(e){if(e.type!=='parayan')return;var k=e.title+'|'+e.place;if(seen[k])return;seen[k]=1;
@@ -760,9 +761,9 @@ function planView(){
   return w}
  var yo={day:'numeric',month:'short',year:'numeric'},root=h('div',{style:'display:flex;flex-direction:column;gap:10px'});
  if(ui.canEdit&&!scoped())root.append(h('button',{class:'btn pri',type:'button',style:'align-self:flex-start',onclick:function(){openTour(null)}},'+ Add tour'));
- tourGroups(tours).forEach(function(g){root.append(h('b',{style:'font-size:13px;margin-top:4px',text:g[1]}));g[2].forEach(function(t){
+ tourGroups(tours).forEach(function(g){var fin=g[0]==='finished'&&!tsel,box=root;if(fin){box=h('details',{style:'display:flex;flex-direction:column;gap:10px'},h('summary',{style:'cursor:pointer;font-weight:600;font-size:13px',text:g[1]+' ('+g[2].length+')'}));root.append(box)}else root.append(h('b',{style:'font-size:13px;margin-top:4px',text:g[1]}));g[2].forEach(function(t){
   var days=diff(t.start,t.end)+1,all=state.saints.every(function(s){return s.guest?(t.saints||[]).indexOf(s.id)<0:(t.saints||[]).indexOf(s.id)>-1});
-  root.append(h('button',{class:'stay',type:'button',style:g[0]==='finished'?'opacity:.65':'',onclick:function(){ui.tourOpen=t.id;render()}},
+  box.append(h('button',{class:'stay',type:'button',style:g[0]==='finished'?'opacity:.65':'',onclick:function(){ui.tourOpen=t.id;render()}},
    h('span',{class:'n',text:t.name}),
    h('span',{class:'days',text:'›'}),
    h('span',{class:'d',text:fmt(t.start,yo)+' – '+fmt(t.end,yo)}),
@@ -923,7 +924,7 @@ function inYatra(e){return e.date>=state.tripStart&&e.date<=state.tripEnd}
 function sumView(){
  var root=h('div',{style:'display:flex;flex-direction:column;gap:14px'}),by={};
  var tour=curTour(),scope=tour?'yatra':(ui.sumScope||'yatra'),isY=scope==='yatra',lo=tour?tour.start:state.tripStart,hi=tour?tour.end:state.tripEnd,stayList=tour?(tour.stays||[]):state.stays;
- var evs=state.events.filter(function(e){return e.type!=='rest'&&e.type!=='lunch'&&e.type!=='pothiyatra'&&(tour?(e.date>=lo&&e.date<=hi&&ownerTour(e)===tour.id):inYatra(e)===isY)&&hasSel(e)});
+ var evs=state.events.filter(function(e){return e.type!=='rest'&&e.type!=='lunch'&&e.type!=='pothiyatra'&&(tour?(e.date>=lo&&e.date<=hi&&ownerTour(e)===tour.id):(inYatra(e)===isY&&!finEv(e)))&&hasSel(e)});
  if(tour)root.append(h('h3',{style:'margin:0',text:tour.name}));
  else root.append(h('div',{class:'chips',role:'group','aria-label':'Summary of'},
   [['yatra',T('All tours')],['other',T('Other days')]].map(function(x){return h('button',{class:'chip',type:'button','aria-pressed':scope===x[0]?'true':'false',style:'padding:6px 14px',onclick:function(){ui.sumScope=x[0];ui.sumOpen='';render()}},x[1])})));
@@ -1096,7 +1097,7 @@ function tourPicker(){
  return h('div',{style:'display:flex;flex-direction:column;gap:6px;margin-bottom:10px'},
   h('b',{text:gu?'યાત્રા':'Tour'}),
   h('p',{class:'note',style:'margin:0',text:gu?'એક યાત્રા પસંદ કરો અને ફક્ત તે જ યાત્રાના કાર્યક્રમ જુઓ.':'Pick a tour to see only that tour’s events and summary.'}),
-  chip('',gu?'બધી યાત્રાઓ':'All tours','',!ui.tourSel),
+  chip('',(tours.filter(function(t){return tourStatus(t)!=='finished'}).length===2)?(gu?'બંને':'Both'):(gu?'બધી':'All'),gu?'ચાલુ અને આવનારી':'Ongoing and upcoming',!ui.tourSel),
   tourGroups(tours).map(function(g){var kids=g[2].map(function(t){return chip(t.id,t.name,fmt(t.start,yo)+' – '+fmt(t.end,yo),ui.tourSel===t.id)});
    if(g[0]==='finished'){var dd=h('details',{style:'opacity:.7'},h('summary',{style:'cursor:pointer;font-weight:600;margin:4px 0',text:g[1]+' ('+g[2].length+')'}),h('div',{style:'display:flex;flex-direction:column;gap:6px;margin-top:6px'},kids));if(g[2].some(function(t){return ui.tourSel===t.id}))dd.open=true;return dd}
    return h('div',{style:'display:flex;flex-direction:column;gap:6px'},h('b',{style:'font-size:13px',text:g[1]}),kids)}))}
