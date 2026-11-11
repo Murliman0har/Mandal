@@ -541,7 +541,7 @@ function tr(x){if(lang!=='gu'||!x)return x;if(PL[x])return PL[x];var m;
  if((m=/^(.+) to (.+)$/.exec(x)))return trp(m[1])+' થી '+trp(m[2]);
  if((m=/^(\S+) (Parayan|Patotsav)$/.exec(x)))return trp(m[1])+' '+PL[m[2]];
  return x}
-function evTitle(e){if(!e)return '';if(lang==='gu'){var g=String(e.titleGu||'').trim();if(g)return g}return tr(e.title||'')}
+function evTitle(e){if(!e)return '';if(lang==='gu'){var g=String(e.titleGu||'').trim();if(g)return g;var t0=String(e.title||''),r=tr(t0);if(r!==t0)return r;var a=guAuto(t0);return a!==t0?dg(a):t0}return tr(e.title||'')}
 function evTypeLabel(e){var o=e&&e.type==='other'?String(e.otherLabel||'').trim():'';return o||typeLabel(e.type)}
 function typeLabel(k){if(k==='patotsav')return lang==='gu'?TG.patotsav:'Patotsav';return lang==='gu'&&TG[k]?TG[k]:TYPES[k]||k}
 function carLabel(c){return (lang==='gu'?CG[c]:CARS[c])||''}
