@@ -533,6 +533,7 @@ function tr(x){if(lang!=='gu'||!x)return x;if(PL[x])return PL[x];var m;
  if((m=/^(.+) to (.+)$/.exec(x)))return trp(m[1])+' થી '+trp(m[2]);
  if((m=/^(\S+) (Parayan|Patotsav)$/.exec(x)))return trp(m[1])+' '+PL[m[2]];
  return x}
+function evTypeLabel(e){var o=e&&e.type==='other'?String(e.otherLabel||'').trim():'';return o||typeLabel(e.type)}
 function typeLabel(k){if(k==='patotsav')return lang==='gu'?TG.patotsav:'Patotsav';return lang==='gu'&&TG[k]?TG[k]:TYPES[k]||k}
 function carLabel(c){return (lang==='gu'?CG[c]:CARS[c])||''}
 function dayOf(a,b){return lang==='gu'?'દિવસ '+dg(a)+' / '+dg(b):'Day '+a+' of '+b}
@@ -657,7 +658,7 @@ function flightLine(e,isNow){var p=isNow?+nowPct(e):0;if(!e.from&&!e.to)return n
 function nowPct(e){var n=new Date(),nm=n.getHours()*60+n.getMinutes()+n.getSeconds()/60,q1=dt(e),st=toMin(q1.start),en=q1.end?toMin(q1.end):st+90;if(st!=null&&en<=st&&VC&&conv(e))en+=1440;if(st==null||en<=st)return 0;return Math.max(0,Math.min(100,(nm-st)/(en-st)*100)).toFixed(1)}
 var STK={pothiyatra:'aarti-sticker.webp',katha:'katha-sticker.webp',vastu:'vastu-sticker.webp',padramani:'padramani-sticker.webp',pravachan:'pravachan-sticker.webp'};
 function showTitle(e){var t=tr(e.title||'').trim();if(!t)return false;var n=function(x){return String(x).toLowerCase().replace(/[^a-z0-9઀-૿]/g,'')},k=n(t);
- return k!==n(typeLabel(e.type))&&k!==n(TYPES[e.type]||'')&&k!==n(e.type)&&k!==n(TG[e.type]||'')}
+ return k!==n(evTypeLabel(e))&&k!==n(typeLabel(e.type))&&k!==n(TYPES[e.type]||'')&&k!==n(e.type)&&k!==n(TG[e.type]||'')}
 function evCard(e,isNow,isNext){
  var tl=timeLabel(e),kv=[];
  function add(k,v){if(v)kv.push(h('dt',{text:T(k)}),h('dd',{text:v}))}
@@ -679,7 +680,7 @@ function evCard(e,isNow,isNext){
  return h('article',{class:'ev t-'+e.type+(isNow?' now':''),'data-eid':e.id},
   STK[e.type]?h('img',{class:'ksticker k-'+e.type+(isNow?' now':''),src:STK[e.type],alt:'','aria-hidden':'true',loading:'lazy'}):null,
   isNow?fxEls(e.type):null,
-  h('div',{class:'rail'+(isNow?' prog':'')},isNow?h('i',{class:'fill',style:'width:'+nowPct(e)+'%'}):null,h('b',{text:tl[0]}),tl[1]?h('span',{text:tl[1]}):null,h('span',{class:'rtag',text:typeLabel(e.type)}),e.type==='rest'?h('span',{class:'moon','aria-hidden':'true'}):null,e.type==='pravachan'?h('span',{class:'mtag',text:'⏱ '+dg(durOf(e))+(lang==='gu'?' મિનિટ':' min')}):null,isNow?h('span',{class:'pill now',text:lang==='gu'?'ચાલુ':'ON'}):null),
+  h('div',{class:'rail'+(isNow?' prog':'')},isNow?h('i',{class:'fill',style:'width:'+nowPct(e)+'%'}):null,h('b',{text:tl[0]}),tl[1]?h('span',{text:tl[1]}):null,h('span',{class:'rtag',text:evTypeLabel(e)}),e.type==='rest'?h('span',{class:'moon','aria-hidden':'true'}):null,e.type==='pravachan'?h('span',{class:'mtag',text:'⏱ '+dg(durOf(e))+(lang==='gu'?' મિનિટ':' min')}):null,isNow?h('span',{class:'pill now',text:lang==='gu'?'ચાલુ':'ON'}):null),
   h('div',{class:'body'},
    corner,
    isNext?h('div',{class:'top'},h('span',{class:'pill next',text:T('Up next')})):null,
@@ -732,7 +733,7 @@ function dayView(){
      (ui.canEdit&&canEditDate(r.date||ui.date))?h('div',{class:'row'},h('button',{class:'btn sm',type:'button',onclick:function(){openWhole(r.title,r.place)}},lang==='gu'?'આખું પારાયણ સુધારો':(r.n>1?'Edit Parayan (Day 1 to '+r.n+')':'Edit Parayan'))):null)}),
    adays.map(function(e){
     return h('div',{style:'margin-top:6px;display:flex;align-items:center;gap:8px;flex-wrap:wrap'},
-     h('span',{class:'patl',text:tr(e.title||'').trim()||typeLabel(e.type)}),
+     h('span',{class:'patl',text:tr(e.title||'').trim()||evTypeLabel(e)}),
      (ui.canEdit&&canEditDate(e.date))?h('button',{class:'btn sm',type:'button',onclick:function(){openForm(e)}},'Edit'):null)})));}
 
  var now=new Date(),nm=now.getHours()*60+now.getMinutes(),isToday=d===today(),nowIds={},nextId=null;
@@ -950,7 +951,7 @@ function sumView(){
  root.append(h('div',{class:'tiles',id:'sumTiles'},SUMORDER.map(function(k){return h('button',{class:'tile t-'+k,type:'button','aria-expanded':ui.sumOpen===k?'true':'false',onclick:function(){ui.sumOpen=ui.sumOpen===k?'':k;render();if(ui.sumOpen)setTimeout(function(){var el=document.getElementById('sumDetail');if(el)el.scrollIntoView({behavior:'smooth',block:'start'})},40)}},h('b',{text:dg(count(k))}),h('span',{text:typeLabel(k)}),h('small',{text:sub(k)||' '}))})));
  if(ui.sumOpen){var k=ui.sumOpen,rows=[];
   if(k==='parayan')sers.forEach(function(o){rows.push(h('button',{class:'li',type:'button',onclick:function(){goDay(o.date)}},h('span',{class:'a',text:tr(o.title)+' · '+tr(o.place)}),h('span',{class:'b',text:dg(o.n)+' '+T('sessions')}),h('span',{class:'b',text:fmt(o.date)+' – '+fmt(o.end)}),h('span')))});
-  else if(k!=='katha')by[k].forEach(function(e){rows.push(h('button',{class:'li',type:'button',onclick:function(){goDay(e.date)}},h('span',{class:'a',text:(tr(e.title)||typeLabel(k))+(((k==='katha'||k==='vastu')&&e.vakta)?' · '+sName(e.vakta):'')}),h('span',{class:'b',text:rangeLabel(e)}),h('span',{class:'b',text:tr(e.place)}),h('span')))});
+  else if(k!=='katha')by[k].forEach(function(e){rows.push(h('button',{class:'li',type:'button',onclick:function(){goDay(e.date)}},h('span',{class:'a',text:(tr(e.title)||(k==='other'?evTypeLabel(e):typeLabel(k)))+(((k==='katha'||k==='vastu')&&e.vakta)?' · '+sName(e.vakta):'')}),h('span',{class:'b',text:rangeLabel(e)}),h('span',{class:'b',text:tr(e.place)}),h('span')))});
   if(k==='parayan'){var pc={};by.parayan.forEach(function(e){pc[e.vakta||'']=(pc[e.vakta||'']||0)+1});
    var pr=Object.keys(pc).filter(Boolean).sort(function(x,y){return pc[y]-pc[x]}).map(function(id){return h('div',{class:'fill'},h('span',{text:sName(id)}),h('b',{text:dg(pc[id])+' '+T(pc[id]===1?'session':'sessions')}))});
    if(pc[''])pr.push(h('div',{class:'fill'},h('span',{text:T('Vakta not chosen')}),h('b',{text:dg(pc[''])+' '+T(pc['']===1?'session':'sessions')})));
@@ -1250,6 +1251,7 @@ function openForm(ev){
   h('div',{class:'row',style:'align-items:center;gap:10px'},isNew?null:delBtn,h('h2',{style:'margin:0',text:isNew?T('Add event'):T('Edit event')})),
   tours.length?field('tour',lang==='gu'?'યાત્રા':'Tour',tourSel):null,
   field('type',T('Type'),typeSel),
+  grp('oth',[field('otherLabel','Write your own label (shown instead of "Other")',inp('otherLabel','text',e.otherLabel))]),
   field('title',T('Title'),inp('title','text',e.title)),
   h('div',{class:'two'},field('date',T('Date'),inp('date','date',e.date)),field('endDate',T('Last day (multi-day only)'),inp('endDate','date',e.endDate))),
   h('div',{class:'two'},field('start',T('Start time'),inp('start','time',e.start)),field('end',T('End time'),inp('end','time',e.end))),
@@ -1271,7 +1273,7 @@ function openForm(ev){
   pics,
   h('div',{class:'row',style:'justify-content:space-between'},
    h('div',{class:'row'},h('button',{class:'btn pri',type:'submit'},T('Done')),h('button',{class:'btn',type:'button',onclick:function(){modal.remove()}},T('Cancel')))));
- function sync(){var t=typeSel.value;groups.parayan.hidden=t!=='parayan';groups.yajman.hidden=YAJ.indexOf(t)<0;groups.shift.hidden=t!=='car';groups.ride.hidden=RIDE.indexOf(t)<0||t==='pravachan';groups.flight.hidden=t!=='flight'}
+ function sync(){var t=typeSel.value;groups.oth.hidden=t!=='other';groups.parayan.hidden=t!=='parayan';groups.yajman.hidden=YAJ.indexOf(t)<0;groups.shift.hidden=t!=='car';groups.ride.hidden=RIDE.indexOf(t)<0||t==='pravachan';groups.flight.hidden=t!=='flight'}
  function wrap(el){return el.parentNode}
  function isSer(){return isNew&&typeSel.value==='parayan'&&pkindSel.value!=='one'}
  function sync2(){sync();var t=typeSel.value,ser=isSer();
@@ -1284,7 +1286,7 @@ function openForm(ev){
  if(tourSel.value)applyTour(isNew);
  function commit(){
   var t=typeSel.value;
-  e.type=t;e.title=F.title.value.trim();e.date=F.date.value;e.endDate=F.endDate.value&&F.endDate.value>F.date.value?F.endDate.value:'';
+  e.type=t;if(t==='other'&&F.otherLabel.value.trim())e.otherLabel=F.otherLabel.value.trim();else delete e.otherLabel;e.title=F.title.value.trim();e.date=F.date.value;e.endDate=F.endDate.value&&F.endDate.value>F.date.value?F.endDate.value:'';
   if(tzSelE.value)e.tz=tzSelE.value;else delete e.tz;
   if(tourSel.value)e.tour=tourSel.value;else delete e.tour;
   e.start=F.start.value;e.end=F.end.value;e.place=F.place.value.trim();e.notes=F.notes.value.trim();
@@ -1656,7 +1658,7 @@ function showEventSaints(id){
  var info=[];if(e.driver&&!hasCars)info.push(h('div',{class:'srow'},h('span',{class:'faint',style:'min-width:56px',text:gu?'ડ્રાઇવર':'Driver'}),h('span',{style:'font-weight:600',text:e.driver})));if(e.car)info.push(h('div',{class:'srow'},h('span',{class:'faint',style:'min-width:56px',text:gu?'ગાડી':'Car'}),h('span',{style:'font-weight:600',text:e.car})));
  var bg=STK[e.type]?h('img',{src:STK[e.type],alt:'','aria-hidden':'true',style:'position:absolute;right:-6px;bottom:-6px;width:62%;max-width:260px;height:auto;opacity:.22;pointer-events:none;z-index:0;-webkit-mask-image:linear-gradient(to right,transparent,#000 55%);mask-image:linear-gradient(to right,transparent,#000 55%)'}):null;
  var form=h('div',{class:'form',style:'position:relative;overflow:hidden'},bg,
-  h('div',{class:'row',style:'justify-content:space-between;align-items:center;flex-wrap:nowrap;position:relative;z-index:1'},h('h2',{style:'margin:0',text:tr(e.title)||typeLabel(e.type)}),h('button',{class:'btn sm',type:'button','aria-label':'Close',onclick:function(){modal.remove()}},'×')),
+  h('div',{class:'row',style:'justify-content:space-between;align-items:center;flex-wrap:nowrap;position:relative;z-index:1'},h('h2',{style:'margin:0',text:tr(e.title)||evTypeLabel(e)}),h('button',{class:'btn sm',type:'button','aria-label':'Close',onclick:function(){modal.remove()}},'×')),
   h('p',{class:'note',style:'margin:0;position:relative;z-index:1',text:(gu?'આ કાર્યક્રમમાં સંતો':'Saints in this event')+' ('+dg(ids.length)+')'}),
   h('div',{style:'display:flex;flex-direction:column;gap:12px;position:relative;z-index:1'},rows,info));
  ['selectstart','contextmenu','dragstart'].forEach(function(t){modal.addEventListener(t,function(ev){ev.preventDefault()})});
