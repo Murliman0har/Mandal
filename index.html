@@ -715,6 +715,11 @@ function dayView(){
  var tsl=selTours();if(tsl.length>1)root.append(h('p',{class:'note',style:'margin:0;text-align:center',text:(lang==='gu'?'પસંદ કરેલી યાત્રાઓ: ':'Showing: ')+tsl.map(function(t){return t.name}).join(' + ')}));
  if(tsel)root.append(h('p',{class:'note',style:'margin:0;text-align:center',text:(lang==='gu'?'ફક્ત આ યાત્રા: ':'Showing only: ')+tsel.name+' ('+fmt(tsel.start,{day:'numeric',month:'short'})+' – '+fmt(tsel.end,{day:'numeric',month:'short',year:'numeric'})+')'+((d<tsel.start||d>tsel.end)?(lang==='gu'?' · આ તારીખ આ યાત્રાની બહાર છે':' · this date is outside the tour'):'')}));
  var prs=parOn(d);
+ var ov=[],ovIds={},sOn=saintsOn(d);
+ evsOnView(d).forEach(function(e){var l=String(e.topPlace||'').trim();if(!l)return;var ids=(e.saints&&e.saints.length)?e.saints:sOn.map(function(z){return z.id});
+  var g=ov.find(function(x){return x.l===l});if(!g){g={l:l,ids:[]};ov.push(g)}
+  ids.forEach(function(i){if(g.ids.indexOf(i)<0)g.ids.push(i);ovIds[i]=1})});
+ var allOv=ov.length>0&&!sOn.some(function(z){return !ovIds[z.id]});
  var evs=evsOnView(d).slice().sort(function(a,b){return sortKey(a)-sortKey(b)});
  var adays=evs.filter(function(e){return e.type!=='parayan'&&!dt(e).start&&!e.session});
  evs=evs.filter(function(e){return adays.indexOf(e)<0});
@@ -725,7 +730,7 @@ function dayView(){
    meta=[tr(st.region)];if(st.start!==st.end)meta.push(gu?'અહીં '+dayOf(k,n):'Day '+k+' of '+n+' here');
    if(d===st.start&&prev&&prev.place!==st.place)meta.push(gu?tr(prev.place)+' થી આગમન':'Arriving from '+prev.place);
    var nx=vs[idx+1];if(d===st.end&&nx)meta.push(gu?'આજે '+tr(nx.place)+' તરફ પ્રસ્થાન':'Moving to '+nx.place+' today')}
-  root.append(h('div',{class:'place pat'},st?h('div',{class:'meta',text:T('Where we are')}):null,st?h('div',{class:'where',text:tr(st.place)}):null,meta.length?h('div',{class:'meta',text:meta.join(' · ')}):null,
+  root.append(h('div',{class:'place pat'},st?h('div',{class:'meta',text:T('Where we are')}):null,st?h('div',{class:'where',text:allOv?ov.map(function(g){return g.l}).join(' · '):tr(st.place)}):null,(st&&ov.length&&!(allOv&&ov.length===1))?ov.map(function(g){return h('div',{class:'meta',style:'font-weight:600',text:g.l+': '+g.ids.map(sName).filter(Boolean).join(', ')})}):null,meta.length?h('div',{class:'meta',text:meta.join(' · ')}):null,
    prs.map(function(r){var bits=[];if(r.place)bits.push(tr(r.place));if(r.yajman)bits.push(T('Yajman')+': '+r.yajman);if(r.shastra)bits.push(r.shastra);
     return h('div',{style:'margin-top:6px;display:flex;flex-direction:column;gap:2px'},
      h('span',{class:'patl',text:'\u{1FA94} '+(tr(r.title)||typeLabel('parayan'))+(r.n>1?' \u00b7 '+(lang==='gu'?dayOf(r.k,r.n):'Day '+r.k+' of '+r.n):'')}),
@@ -1257,6 +1262,7 @@ function openForm(ev){
   h('div',{class:'two'},field('start',T('Start time'),inp('start','time',e.start)),field('end',T('End time'),inp('end','time',e.end))),
   h('div',{class:'f'},h('label',{text:'Time zone of these times'}),tzSelE,h('p',{class:'note',style:'margin:2px 0 0',text:'Leave on Auto to use the place where the saints are that day. Change it only on a travel day.'})),
   field('place',T('Location'),inp('place','text',e.place)),
+  field('topPlace','Show at top instead of the stay place (e.g. Shibir) for the saints in this event',inp('topPlace','text',e.topPlace)),
   grp('prv',[field('dur','Length of Pravachan',sel([['5','5 minutes'],['10','10 minutes'],['15','15 minutes']],String(durOf(e))))]),
   grp('pk',[field('pkind','Parayan type',pkindSel)]),
   grp('ser',[h('p',{class:'note',style:'margin:0',text:'Every day has Morning and Evening sessions. The last day has only the Morning session. Choose the Vakta and part of the Shastra for each session afterwards.'}),
@@ -1289,7 +1295,7 @@ function openForm(ev){
   e.type=t;if(t==='other'&&F.otherLabel.value.trim())e.otherLabel=F.otherLabel.value.trim();else delete e.otherLabel;e.title=F.title.value.trim();e.date=F.date.value;e.endDate=F.endDate.value&&F.endDate.value>F.date.value?F.endDate.value:'';
   if(tzSelE.value)e.tz=tzSelE.value;else delete e.tz;
   if(tourSel.value)e.tour=tourSel.value;else delete e.tour;
-  e.start=F.start.value;e.end=F.end.value;e.place=F.place.value.trim();e.notes=F.notes.value.trim();
+  if(F.topPlace.value.trim())e.topPlace=F.topPlace.value.trim();else delete e.topPlace;e.start=F.start.value;e.end=F.end.value;e.place=F.place.value.trim();e.notes=F.notes.value.trim();
   e.saints=[].slice.call(checks.querySelectorAll('input')).filter(function(c){return c.checked}).map(function(c){return c.value});
   e.cars=(RIDE.indexOf(typeSel.value)<0||typeSel.value==='pravachan')?[]:(e.cars||[]).map(function(c){return {driver:(c.driver||'').trim(),saints:c.saints.filter(function(i){return e.saints.indexOf(i)>-1})}}).filter(function(c){return c.driver||c.saints.length});
   e.session=F.session.value;e.vakta=F.vakta.value;if(t==='katha'||t==='vastu')e.vakta=F.kvakta.value;e.shastra=F.shastra.value.trim();e.portion=F.portion.value.trim();
