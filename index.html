@@ -570,7 +570,9 @@ function autoTour(){var ts=state.tours||[],cur=ts.find(function(x){return x.id==
  var pick=ts.filter(function(t){return tourStatus(t)==='ongoing'})[0]||ts.filter(function(t){return tourStatus(t)==='upcoming'}).sort(function(a,b){return a.start<b.start?-1:1})[0];
  if(pick){ui.tourSel=pick.id;if(ui.date<pick.start||ui.date>pick.end)ui.date=pick.start<today()&&today()<=pick.end?today():pick.start}}
 function curTour(){if(!ui.tourSel)return null;var t=(state.tours||[]).find(function(x){return x.id===ui.tourSel});if(!t)ui.tourSel='';return t||null}
-function dayAll(d){var t=curTour();if(t&&(d<t.start||d>t.end))return [];return state.events.filter(function(e){return e.date<=d&&d<=(e.endDate||e.date)})}
+// An event belongs to the tour it was saved under; older events belong to the most specific (shortest) tour whose dates contain them.
+function ownerTour(e){var ts=state.tours||[];if(e.tour&&ts.some(function(t){return t.id===e.tour}))return e.tour;var best=null,bl=1e9;ts.forEach(function(t){if(t.start<=e.date&&e.date<=t.end){var l=diff(t.start,t.end);if(l<bl){bl=l;best=t}}});return best?best.id:''}
+function dayAll(d){var t=curTour();if(t&&(d<t.start||d>t.end))return [];return state.events.filter(function(e){return e.date<=d&&d<=(e.endDate||e.date)&&(!t||ownerTour(e)===t.id)})}
 function hasSel(e){return !ui.sel.length||ui.sel.some(function(id){return e.saints.indexOf(id)>-1})}
 function parOn(d){var seen={},out=[];
  dayAll(d).forEach(function(e){if(e.type!=='parayan')return;var k=e.title+'|'+e.place;if(seen[k])return;seen[k]=1;
@@ -921,7 +923,7 @@ function inYatra(e){return e.date>=state.tripStart&&e.date<=state.tripEnd}
 function sumView(){
  var root=h('div',{style:'display:flex;flex-direction:column;gap:14px'}),by={};
  var tour=curTour(),scope=tour?'yatra':(ui.sumScope||'yatra'),isY=scope==='yatra',lo=tour?tour.start:state.tripStart,hi=tour?tour.end:state.tripEnd,stayList=tour?(tour.stays||[]):state.stays;
- var evs=state.events.filter(function(e){return e.type!=='rest'&&e.type!=='lunch'&&e.type!=='pothiyatra'&&(tour?(e.date>=lo&&e.date<=hi):inYatra(e)===isY)&&hasSel(e)});
+ var evs=state.events.filter(function(e){return e.type!=='rest'&&e.type!=='lunch'&&e.type!=='pothiyatra'&&(tour?(e.date>=lo&&e.date<=hi&&ownerTour(e)===tour.id):inYatra(e)===isY)&&hasSel(e)});
  if(tour)root.append(h('h3',{style:'margin:0',text:tour.name}));
  else root.append(h('div',{class:'chips',role:'group','aria-label':'Summary of'},
   [['yatra',T('All tours')],['other',T('Other days')]].map(function(x){return h('button',{class:'chip',type:'button','aria-pressed':scope===x[0]?'true':'false',style:'padding:6px 14px',onclick:function(){ui.sumScope=x[0];ui.sumOpen='';render()}},x[1])})));
@@ -1192,8 +1194,8 @@ function openForm(ev){
  var tours=(state.tours||[]).filter(canEditTour).sort(function(a,b){return a.start<b.start?-1:a.start>b.start?1:0});
  ui.formTmp=[];
  var tzSelE=tzSelect(e.tz||'','Auto (place of the stay'+(stayTzOn(e.date||ui.date)?': '+tzShort(stayTzOn(e.date||ui.date)):'')+')');
- function tourFor(dt){var m=tours.find(function(t){return t.start<=dt&&dt<=t.end});return m?m.id:''}
- var initTour=isNew&&curTour()?curTour().id:tourFor(e.date);
+ function tourFor(dt){var m=null,bl=1e9;tours.forEach(function(t){if(t.start<=dt&&dt<=t.end){var l=diff(t.start,t.end);if(l<bl){bl=l;m=t}}});return m?m.id:''}
+ var initTour=isNew&&curTour()?curTour().id:(e.tour&&tours.some(function(t){return t.id===e.tour})?e.tour:tourFor(e.date));
  var tourSel=sel([['',lang==='gu'?'કોઈ યાત્રા નહીં':'No tour']].concat(tours.map(function(t){return[t.id,t.name]})),initTour);
  function tIdsFor(t){var ids=[];(t.saints||[]).forEach(function(i){if(state.saints.some(function(s){return s.id===i}))ids.push(i)});(t.tmp||[]).forEach(function(n){ids.push('~'+n)});return ids}
  function applyTour(fresh){
@@ -1275,6 +1277,7 @@ function openForm(ev){
   var t=typeSel.value;
   e.type=t;e.title=F.title.value.trim();e.date=F.date.value;e.endDate=F.endDate.value&&F.endDate.value>F.date.value?F.endDate.value:'';
   if(tzSelE.value)e.tz=tzSelE.value;else delete e.tz;
+  if(tourSel.value)e.tour=tourSel.value;else delete e.tour;
   e.start=F.start.value;e.end=F.end.value;e.place=F.place.value.trim();e.notes=F.notes.value.trim();
   e.saints=[].slice.call(checks.querySelectorAll('input')).filter(function(c){return c.checked}).map(function(c){return c.value});
   e.cars=(RIDE.indexOf(typeSel.value)<0||typeSel.value==='pravachan')?[]:(e.cars||[]).map(function(c){return {driver:(c.driver||'').trim(),saints:c.saints.filter(function(i){return e.saints.indexOf(i)>-1})}}).filter(function(c){return c.driver||c.saints.length});
