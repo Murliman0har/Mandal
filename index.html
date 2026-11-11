@@ -743,11 +743,11 @@ function dayView(){
  var tsl=selTours();if(tsl.length>1)root.append(h('p',{class:'note',style:'margin:0;text-align:center',text:(lang==='gu'?'પસંદ કરેલી યાત્રાઓ: ':'Showing: ')+tsl.map(function(t){return t.name}).join(' + ')}));
  if(tsel)root.append(h('p',{class:'note',style:'margin:0;text-align:center',text:(lang==='gu'?'ફક્ત આ યાત્રા: ':'Showing only: ')+tsel.name+' ('+fmt(tsel.start,{day:'numeric',month:'short'})+' – '+fmt(tsel.end,{day:'numeric',month:'short',year:'numeric'})+')'+((d<tsel.start||d>tsel.end)?(lang==='gu'?' · આ તારીખ આ યાત્રાની બહાર છે':' · this date is outside the tour'):'')}));
  var prs=parOn(d);
- var ov=[],ovIds={},sOn=saintsOn(d);
- whereOn(d).forEach(function(w){var ids=(w.saints||[]).filter(function(i){return sOn.some(function(z){return z.id===i})});if(!ids.length)return;
+ var ov=[],ovIds={},sOn=saintsOn(d),sShow=ui.sel.length?sOn.filter(function(z){return ui.sel.indexOf(z.id)>-1}):sOn;if(!sShow.length)sShow=sOn;
+ whereOn(d).forEach(function(w){var ids=(w.saints||[]).filter(function(i){return sShow.some(function(z){return z.id===i})});if(!ids.length)return;
   var g=ov.find(function(x){return x.l===w.place});if(!g){g={l:w.place,ids:[]};ov.push(g)}
   ids.forEach(function(i){if(g.ids.indexOf(i)<0)g.ids.push(i);ovIds[i]=1})});
- var allOv=ov.length>0&&!sOn.some(function(z){return !ovIds[z.id]});
+ var allOv=ov.length>0&&!sShow.some(function(z){return !ovIds[z.id]});
  var evs=evsOnView(d).slice().sort(function(a,b){return sortKey(a)-sortKey(b)});
  var adays=evs.filter(function(e){return e.type!=='parayan'&&!dt(e).start&&!e.session});
  evs=evs.filter(function(e){return adays.indexOf(e)<0});
