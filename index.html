@@ -751,6 +751,11 @@ function whereEyeEls(d,st,ovF,ovFIds,sOn){
  viewTours().forEach(function(t){if(!(t.start<=d&&d<=t.end))return;var l=diff(t.start,t.end);(state.tours||[]).forEach(function(u){if(u.id===t.id||!(u.start<=d&&d<=u.end)||diff(u.start,u.end)>=l)return;
   var sy=stayIn([u],d),lab=sy?sy.place:u.name,ids=(u.saints||[]).filter(function(i){return state.saints.some(function(z){return z.id===i})&&!ovFIds[i]});if(!ids.length)return;
   var g=places.find(function(x){return x.l===lab&&x.tour===u.name});if(!g){g={l:lab,ids:[],stay:false,tour:u.name};places.push(g)}ids.forEach(function(i){if(g.ids.indexOf(i)<0)g.ids.push(i)})})});
+ // The other way round: when viewing a shorter tour (London) the rest of the longer tour it sits inside (Anjar) are at their base.
+ viewTours().forEach(function(t){if(!(t.start<=d&&d<=t.end))return;var l=diff(t.start,t.end);(state.tours||[]).forEach(function(B){if(B.id===t.id||!(B.start<=d&&d<=B.end)||diff(B.start,B.end)<=l)return;
+  var sy=stayIn([B],d),lab=sy?sy.place:B.name,taken={};places.forEach(function(x){x.ids.forEach(function(i){taken[i]=1})});
+  var ids=(B.saints||[]).filter(function(i){return state.saints.some(function(z){return z.id===i})&&!taken[i]});if(!ids.length)return;
+  var g=places.find(function(x){return x.l===lab&&x.tour===B.name});if(!g){g={l:lab,ids:[],stay:false,tour:B.name};places.push(g)}ids.forEach(function(i){if(g.ids.indexOf(i)<0)g.ids.push(i)})})});
  var eye=h('button',{class:'btn sm',type:'button','aria-label':'Who is where','aria-expanded':open?'true':'false',title:'Who is where',style:'position:absolute;top:8px;right:8px;padding:2px 10px;z-index:2',onclick:function(){ui.whereEye=open?'':d;ui.wherePick='';render()}},'👁️');
  if(!open)return [eye];
  var pick=ui.wherePick,chosen=places.find(function(x){return x.l===pick})||null;
