@@ -747,11 +747,15 @@ function openWhere(d,cur){
 function whereEyeEls(d,st,ovF,ovFIds,sOn){
  var open=ui.whereEye===d,places=ovF.map(function(g){return {l:g.l,ids:g.ids,stay:false}}),rest=sOn.filter(function(z){return !ovFIds[z.id]}).map(function(z){return z.id});
  if(rest.length)places.push({l:st.place,ids:rest,stay:true});
+ // Saints who are away on a shorter tour running inside the tour being viewed (e.g. London inside Anjar).
+ viewTours().forEach(function(t){if(!(t.start<=d&&d<=t.end))return;var l=diff(t.start,t.end);(state.tours||[]).forEach(function(u){if(u.id===t.id||!(u.start<=d&&d<=u.end)||diff(u.start,u.end)>=l)return;
+  var sy=stayIn([u],d),lab=sy?sy.place:u.name,ids=(u.saints||[]).filter(function(i){return state.saints.some(function(z){return z.id===i})&&!ovFIds[i]});if(!ids.length)return;
+  var g=places.find(function(x){return x.l===lab&&x.tour===u.name});if(!g){g={l:lab,ids:[],stay:false,tour:u.name};places.push(g)}ids.forEach(function(i){if(g.ids.indexOf(i)<0)g.ids.push(i)})})});
  var eye=h('button',{class:'btn sm',type:'button','aria-label':'Who is where','aria-expanded':open?'true':'false',title:'Who is where',style:'position:absolute;top:8px;right:8px;padding:2px 10px;z-index:2',onclick:function(){ui.whereEye=open?'':d;ui.wherePick='';render()}},'👁️');
  if(!open)return [eye];
  var pick=ui.wherePick,chosen=places.find(function(x){return x.l===pick})||null;
  return [eye,h('div',{style:'display:flex;flex-direction:column;gap:6px;margin-top:6px'},
-  h('div',{class:'row',style:'gap:6px;flex-wrap:wrap'},places.map(function(x){var on=chosen===x;return h('button',{class:'chip'+(on?' hl':''),type:'button','aria-pressed':on?'true':'false',onclick:function(){ui.wherePick=on?'':x.l;render()}},trPlace(x.l)+' ('+dg(x.ids.length)+')')})),
+  h('div',{class:'row',style:'gap:6px;flex-wrap:wrap'},places.map(function(x){var on=chosen===x;return h('button',{class:'chip'+(on?' hl':''),type:'button','aria-pressed':on?'true':'false',onclick:function(){ui.wherePick=on?'':x.l;render()}},trPlace(x.l)+(x.tour?' · '+x.tour:'')+' ('+dg(x.ids.length)+')')})),
   chosen?h('div',{style:'display:flex;flex-direction:column;gap:4px'},chosen.ids.map(function(i){return h('div',{class:'meta',style:'font-weight:600',text:sName(i)})})):h('p',{class:'note',style:'margin:0',text:lang==='gu'?'સંતોની યાદી જોવા સ્થળ પર ટેપ કરો':'Tap a place to see its saints'}))]}
 
 function dayView(){
@@ -786,7 +790,7 @@ function dayView(){
    meta=[trPlace(st.region)];if(st.start!==st.end)meta.push(gu?'અહીં '+dayOf(k,n):'Day '+k+' of '+n+' here');
    if(d===st.start&&prev&&prev.place!==st.place)meta.push(gu?trPlace(prev.place)+' થી આગમન':'Arriving from '+prev.place);
    var nx=vs[idx+1];if(d===st.end&&nx)meta.push(gu?'આજે '+trPlace(nx.place)+' તરફ પ્રસ્થાન':'Moving to '+nx.place+' today')}
-  root.append(h('div',{class:'place pat',style:'position:relative'},st?h('div',{class:'meta',text:T('Where we are')}):null,st?h('div',{class:'where',text:allOv?ov.map(function(g){return trPlace(g.l)}).join(' · '):trPlace(st.place)}):null,(st&&ovF.length)?whereEyeEls(d,st,ovF,ovFIds,sOn):null,meta.length?h('div',{class:'meta',text:meta.join(' · ')}):null,
+  root.append(h('div',{class:'place pat',style:'position:relative'},st?h('div',{class:'meta',text:T('Where we are')}):null,st?h('div',{class:'where',text:allOv?ov.map(function(g){return trPlace(g.l)}).join(' · '):trPlace(st.place)}):null,st?whereEyeEls(d,st,ovF,ovFIds,sOn):null,meta.length?h('div',{class:'meta',text:meta.join(' · ')}):null,
    prs.map(function(r){var bits=[];if(r.place)bits.push(trPlace(r.place));if(r.yajman)bits.push(T('Yajman')+': '+r.yajman);if(r.shastra)bits.push(r.shastra);
     return h('div',{style:'margin-top:6px;display:flex;flex-direction:column;gap:2px'},
      h('span',{class:'patl',text:'\u{1FA94} '+(evTitle(r)||typeLabel('parayan'))+(r.n>1?' \u00b7 '+(lang==='gu'?dayOf(r.k,r.n):'Day '+r.k+' of '+r.n):'')}),
