@@ -746,7 +746,8 @@ function openWhere(d,cur){
 
 function whereEyeEls(d,st,ovF,ovFIds,sOn){
  var open=ui.whereEye===d,places=ovF.map(function(g){return {l:g.l,ids:g.ids,stay:false}}),rest=sOn.filter(function(z){return !ovFIds[z.id]}).map(function(z){return z.id});
- if(rest.length)places.push({l:st.place,ids:rest,stay:true});
+ // Each saint is at the stay of the shortest tour that lists them that day (London six at Harrow, the rest at Anjar); anyone on no tour is at the day's stay.
+ rest.forEach(function(i){var best=null,bl=1e9;(state.tours||[]).forEach(function(t){if(t.start<=d&&d<=t.end&&(t.saints||[]).indexOf(i)>-1){var l=diff(t.start,t.end),sy=stayIn([t],d);if(sy&&l<bl){bl=l;best=sy}}});put(i,best?best.place:st.place,'')});
  function put(i,lab,tn){var w=whereOn(d).find(function(z){return (z.saints||[]).indexOf(i)>-1});if(w){lab=w.place;tn=''}var g=places.find(function(x){return x.l===lab&&(x.tour||'')===(tn||'')});if(!g){g={l:lab,ids:[],stay:false,tour:tn||''};places.push(g)}if(g.ids.indexOf(i)<0)g.ids.push(i)}
  // Saints who are away on a shorter tour running inside the tour being viewed (e.g. London inside Anjar).
  viewTours().forEach(function(t){if(!(t.start<=d&&d<=t.end))return;var l=diff(t.start,t.end);(state.tours||[]).forEach(function(u){if(u.id===t.id||!(u.start<=d&&d<=u.end)||diff(u.start,u.end)>=l)return;
