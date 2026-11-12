@@ -598,6 +598,7 @@ function parOn(d){var seen={},out=[];
 // A shorter tour inside a longer one (London inside Anjar, Dakshin inside Anjar) takes its saints away from the longer tour on those days.
 function awayOn(t,d){var ids={},l=diff(t.start,t.end);(state.tours||[]).forEach(function(u){if(u.id!==t.id&&u.start<=d&&d<=u.end&&diff(u.start,u.end)<l)(u.saints||[]).forEach(function(i){ids[i]=1})});return ids}
 function tourCast(d){var allowed={},gone={},any=false;viewTours().forEach(function(t){if(t.start<=d&&d<=t.end){any=true;var aw=awayOn(t,d);(t.saints||[]).forEach(function(i){if(!aw[i])allowed[i]=1});Object.keys(aw).forEach(function(i){gone[i]=1})}});
+ if(any){var vid={};viewTours().forEach(function(t){vid[t.id]=1});(state.tours||[]).forEach(function(u){if(!vid[u.id]&&u.start<=d&&d<=u.end)(u.saints||[]).forEach(function(i){gone[i]=1})})}
  Object.keys(allowed).forEach(function(i){delete gone[i]});return {allowed:allowed,gone:gone,any:any}}
 function saintsOn(d){var c=tourCast(d);return state.saints.filter(function(s){return s.guest?!!c.allowed[s.id]:!c.gone[s.id]})}
 function vaktaList(cur,d){d=d||ui.date;var ids={},set=false;viewTours().forEach(function(t){if(t.start<=d&&d<=t.end&&t.vaktas&&t.vaktas.length){var aw=awayOn(t,d);set=true;t.vaktas.forEach(function(i){if(!aw[i])ids[i]=1})}});
