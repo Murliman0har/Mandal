@@ -747,15 +747,21 @@ function openWhere(d,cur){
 function whereEyeEls(d,st,ovF,ovFIds,sOn){
  var open=ui.whereEye===d,places=ovF.map(function(g){return {l:g.l,ids:g.ids,stay:false}}),rest=sOn.filter(function(z){return !ovFIds[z.id]}).map(function(z){return z.id});
  if(rest.length)places.push({l:st.place,ids:rest,stay:true});
+ function put(i,lab,tn){var w=whereOn(d).find(function(z){return (z.saints||[]).indexOf(i)>-1});if(w){lab=w.place;tn=''}var g=places.find(function(x){return x.l===lab&&(x.tour||'')===(tn||'')});if(!g){g={l:lab,ids:[],stay:false,tour:tn||''};places.push(g)}if(g.ids.indexOf(i)<0)g.ids.push(i)}
  // Saints who are away on a shorter tour running inside the tour being viewed (e.g. London inside Anjar).
  viewTours().forEach(function(t){if(!(t.start<=d&&d<=t.end))return;var l=diff(t.start,t.end);(state.tours||[]).forEach(function(u){if(u.id===t.id||!(u.start<=d&&d<=u.end)||diff(u.start,u.end)>=l)return;
   var sy=stayIn([u],d),lab=sy?sy.place:u.name,ids=(u.saints||[]).filter(function(i){return state.saints.some(function(z){return z.id===i})&&!ovFIds[i]});if(!ids.length)return;
-  var g=places.find(function(x){return x.l===lab&&x.tour===u.name});if(!g){g={l:lab,ids:[],stay:false,tour:u.name};places.push(g)}ids.forEach(function(i){if(g.ids.indexOf(i)<0)g.ids.push(i)})})});
+  ids.forEach(function(i){put(i,lab,u.name)})})});
  // The other way round: when viewing a shorter tour (London) the rest of the longer tour it sits inside (Anjar) are at their base.
  viewTours().forEach(function(t){if(!(t.start<=d&&d<=t.end))return;var l=diff(t.start,t.end);(state.tours||[]).forEach(function(B){if(B.id===t.id||!(B.start<=d&&d<=B.end)||diff(B.start,B.end)<=l)return;
   var sy=stayIn([B],d),lab=sy?sy.place:B.name,taken={};places.forEach(function(x){x.ids.forEach(function(i){taken[i]=1})});
   var ids=(B.saints||[]).filter(function(i){return state.saints.some(function(z){return z.id===i})&&!taken[i]});if(!ids.length)return;
-  var g=places.find(function(x){return x.l===lab&&x.tour===B.name});if(!g){g={l:lab,ids:[],stay:false,tour:B.name};places.push(g)}ids.forEach(function(i){if(g.ids.indexOf(i)<0)g.ids.push(i)})})});
+  ids.forEach(function(i){put(i,lab,B.name)})})});
+ // Tidy: every saint appears once (place changes first, then a tour's own stay, then the base stay), and groups at the same place become one.
+ (function(){var seen={},ord=places.map(function(x,i){return {x:x,i:i,p:x.tour?1:(x.stay?2:0)}}).sort(function(a,b){return a.p-b.p||a.i-b.i});
+  ord.forEach(function(o){o.x.ids=o.x.ids.filter(function(i){if(seen[i])return false;seen[i]=1;return true})});
+  var out=[];places.forEach(function(x){if(!x.ids.length)return;var m=out.find(function(y){return nrm(y.l)===nrm(x.l)});if(m){x.ids.forEach(function(i){m.ids.push(i)});m.tour=''}else out.push(x)});
+  places=out})();
  var eye=h('button',{class:'btn sm',type:'button','aria-label':'Who is where','aria-expanded':open?'true':'false',title:'Who is where',style:'position:absolute;top:8px;right:8px;padding:2px 10px;z-index:2',onclick:function(){ui.whereEye=open?'':d;ui.wherePick='';render()}},'👁️');
  if(!open)return [eye];
  var pick=ui.wherePick,chosen=places.find(function(x){return x.l===pick})||null;
