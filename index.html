@@ -748,6 +748,8 @@ function openWhere(d,cur){
 
 function whereEyeEls(d,st,ovF,ovFIds,sOn){
  var SA=standingAway(d),open=ui.whereEye===d,places=ovF.map(function(g){return {l:g.l,ids:g.ids,stay:false}}),rest=sOn.filter(function(z){return !ovFIds[z.id]}).map(function(z){return z.id});
+ // Saints on a standing base (e.g. the 4 at Gurukul) are shown there until a shorter change brings them elsewhere.
+ (state.dayWhere||[]).forEach(function(w){if(!(w.start<=d&&d<=(w.end||w.start))||diff(w.start,w.end||w.start)<30)return;(w.saints||[]).forEach(function(i){if(SA[i]&&state.saints.some(function(z){return z.id===i})){var g=places.find(function(x){return x.l===w.place&&!x.tour});if(!g){g={l:w.place,ids:[],stay:false,tour:''};places.unshift(g)}if(g.ids.indexOf(i)<0)g.ids.push(i)}})});
  // Each saint is at the stay of the shortest tour that lists them that day (London six at Harrow, the rest at Anjar); anyone on no tour is at the day's stay.
  rest.forEach(function(i){var best=null,bl=1e9;(state.tours||[]).forEach(function(t){if(t.start<=d&&d<=t.end&&(t.saints||[]).indexOf(i)>-1){var l=diff(t.start,t.end),sy=stayIn([t],d);if(sy&&l<bl){bl=l;best=sy}}});put(i,best?best.place:st.place,'')});
  function put(i,lab,tn){if(SA[i])return;var w=whereOn(d).find(function(z){return (z.saints||[]).indexOf(i)>-1&&diff(z.start,z.end||z.start)<30});if(w){lab=w.place;tn=''}var g=places.find(function(x){return x.l===lab&&(x.tour||'')===(tn||'')});if(!g){g={l:lab,ids:[],stay:false,tour:tn||''};places.push(g)}if(g.ids.indexOf(i)<0)g.ids.push(i)}
