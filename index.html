@@ -595,8 +595,12 @@ function parOn(d){var seen={},out=[];
  dayAll(d).forEach(function(e){if(e.type!=='parayan')return;var k=e.title+'|'+e.place;if(seen[k])return;seen[k]=1;
   var all=seriesOf(e),f=all[0].date,l=all[all.length-1].date;out.push({title:e.title,titleGu:e.titleGu||'',place:e.place,yajman:e.yajman||'',shastra:e.shastra||'',k:diff(f,d)+1,n:diff(f,l)+1})});
  return out}
-function saintsOn(d){var ids={};viewTours().forEach(function(t){if(t.start<=d&&d<=t.end)(t.saints||[]).forEach(function(i){ids[i]=1})});return state.saints.filter(function(s){return !s.guest||ids[s.id]})}
-function vaktaList(cur,d){d=d||ui.date;var ids={},set=false;viewTours().forEach(function(t){if(t.start<=d&&d<=t.end&&t.vaktas&&t.vaktas.length){set=true;t.vaktas.forEach(function(i){ids[i]=1})}});
+// A shorter tour inside a longer one (London inside Anjar, Dakshin inside Anjar) takes its saints away from the longer tour on those days.
+function awayOn(t,d){var ids={},l=diff(t.start,t.end);(state.tours||[]).forEach(function(u){if(u.id!==t.id&&u.start<=d&&d<=u.end&&diff(u.start,u.end)<l)(u.saints||[]).forEach(function(i){ids[i]=1})});return ids}
+function tourCast(d){var allowed={},gone={},any=false;viewTours().forEach(function(t){if(t.start<=d&&d<=t.end){any=true;var aw=awayOn(t,d);(t.saints||[]).forEach(function(i){if(!aw[i])allowed[i]=1});Object.keys(aw).forEach(function(i){gone[i]=1})}});
+ Object.keys(allowed).forEach(function(i){delete gone[i]});return {allowed:allowed,gone:gone,any:any}}
+function saintsOn(d){var c=tourCast(d);return state.saints.filter(function(s){return s.guest?!!c.allowed[s.id]:!c.gone[s.id]})}
+function vaktaList(cur,d){d=d||ui.date;var ids={},set=false;viewTours().forEach(function(t){if(t.start<=d&&d<=t.end&&t.vaktas&&t.vaktas.length){var aw=awayOn(t,d);set=true;t.vaktas.forEach(function(i){if(!aw[i])ids[i]=1})}});
  var on=saintsOn(d);return state.saints.filter(function(s){if(s.id===cur)return true;if(on.indexOf(s)<0)return false;return set?!!ids[s.id]:s.role==='Vakta'})}
 function evsOn(d){return dayAll(d).filter(hasSel)}
 // ---- time zones: stored times are always local to the event's place. Only the dashboard shows them in the viewer's own time. ----
@@ -1264,7 +1268,7 @@ function openForm(ev){
  function tourFor(dt){var m=null,bl=1e9;tours.forEach(function(t){if(t.start<=dt&&dt<=t.end){var l=diff(t.start,t.end);if(l<bl){bl=l;m=t}}});return m?m.id:''}
  var initTour=isNew&&curTour()?curTour().id:(e.tour&&tours.some(function(t){return t.id===e.tour})?e.tour:tourFor(e.date));
  var tourSel=sel([['',lang==='gu'?'કોઈ યાત્રા નહીં':'No tour']].concat(tours.map(function(t){return[t.id,t.name]})),initTour);
- function tIdsFor(t){var ids=[];(t.saints||[]).forEach(function(i){if(state.saints.some(function(s){return s.id===i}))ids.push(i)});(t.tmp||[]).forEach(function(n){ids.push('~'+n)});return ids}
+ function tIdsFor(t){var ids=[],aw=awayOn(t,(F.date&&F.date.value)||e.date);(t.saints||[]).forEach(function(i){if(!aw[i]&&state.saints.some(function(s){return s.id===i}))ids.push(i)});(t.tmp||[]).forEach(function(n){ids.push('~'+n)});return ids}
  function applyTour(fresh){
   var t=tours.find(function(x){return x.id===tourSel.value})||null;ui.formTmp=t?(t.tmp||[]).slice():[];
   var ticked=[].slice.call(checks.querySelectorAll('input')).filter(function(c){return c.checked}).map(function(c){return c.value});
