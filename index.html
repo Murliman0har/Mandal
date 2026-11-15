@@ -1231,9 +1231,6 @@ function sideDrawer(){
   tourPicker(),
   h('b',{text:lang==='gu'?'સંતો':'Saints'}),
   h('p',{class:'note',style:'margin:0 0 4px',text:lang==='gu'?'જેમના કાર્યક્રમ જોવા હોય તેમને ટેપ કરો':'Tap to highlight the saints you want to follow.'}),
-  h('div',{class:'row',style:'gap:6px;margin-bottom:6px'},
-   h('button',{class:'btn sm',type:'button',onclick:function(){ui.sel=chooserSaints().map(function(s){return s.id});saveSel();render()}},lang==='gu'?'બધા પસંદ કરો':'Select all'),
-   h('button',{class:'btn sm',type:'button',onclick:clear},lang==='gu'?'બધા રદ કરો':'Deselect all')),
   h('button',{class:'chip'+(ui.sel.length?'':' hl'),type:'button','aria-pressed':ui.sel.length?'false':'true',onclick:clear},h('span',{class:'av all',text:lang==='gu'?'બધા':'All'}),T('Everyone'),h('span',{class:'ct',text:dg(day.length)})),
   saintGroups(cnt,toggle),
   h('p',{class:'note',style:'margin:6px 0 0',text:ui.sel.length?(lang==='gu'?'આ દિવસે '+dg(shown)+' કાર્યક્રમ બતાવ્યા ('+dg(day.length)+' માંથી)':'Showing '+shown+' of '+day.length+' events on this day'):(lang==='gu'?'આ દિવસે '+dg(day.length)+' કાર્યક્રમ':day.length+' events on this day')}),
@@ -1309,6 +1306,11 @@ function openForm(ev){
  function tourFor(dt){var m=null,bl=1e9;tours.forEach(function(t){if(t.start<=dt&&dt<=t.end){var l=diff(t.start,t.end);if(l<bl){bl=l;m=t}}});return m?m.id:''}
  var initTour=isNew&&curTour()?curTour().id:(e.tour&&tours.some(function(t){return t.id===e.tour})?e.tour:tourFor(e.date));
  var tourSel=sel([['',lang==='gu'?'કોઈ યાત્રા નહીં':'No tour']].concat(tours.map(function(t){return[t.id,t.name]})),initTour);
+ // One box to tick or untick every saint in this event.
+ var allBox=h('input',{type:'checkbox'}),allLbl=h('label',{style:'display:flex;align-items:center;gap:6px;font-weight:600;margin:0 0 6px;text-transform:none;letter-spacing:0'},allBox,lang==='gu'?'બધા સંતો':'All saints');
+ function syncAll(){var cs=[].slice.call(checks.querySelectorAll('input'));allBox.checked=cs.length>0&&cs.every(function(c){return c.checked})}
+ allBox.addEventListener('change',function(){[].slice.call(checks.querySelectorAll('input')).forEach(function(c){c.checked=allBox.checked});checks.dispatchEvent(new Event('change'))});
+ checks.addEventListener('change',syncAll);syncAll();
  function tIdsFor(t){var ids=[],aw=awayOn(t,(F.date&&F.date.value)||e.date),sa0=standingAway((F.date&&F.date.value)||e.date);Object.keys(sa0).forEach(function(k){aw[k]=1});(t.saints||[]).forEach(function(i){if(!aw[i]&&state.saints.some(function(s){return s.id===i}))ids.push(i)});(t.tmp||[]).forEach(function(n){ids.push('~'+n)});return ids}
  function applyTour(fresh){
   var t=tours.find(function(x){return x.id===tourSel.value})||null;ui.formTmp=t?(t.tmp||[]).slice():[];
@@ -1328,7 +1330,7 @@ function openForm(ev){
   ui.assets?h('input',{type:'file',id:'f_photos',accept:'image/*',multiple:true,onchange:function(ev){
     var files=[].slice.call(ev.target.files);ev.target.value='';var n=0;pstat.textContent='Uploading...';
     files.reduce(function(p,f){return p.then(function(){return shrink(f).then(function(b){return ui.assets.upload(b)}).then(function(r){e.photos.push({id:r.id});n++;drawThumbs()}).catch(function(){pstat.textContent='One picture could not be uploaded.'})})},Promise.resolve()).then(function(){if(n)pstat.textContent=n+' added. Press Done, then Save and publish.'})}}):h('span',{class:'note',text:'Picture upload needs editor access.'}),pstat);
- var saintsBox=h('div',{class:'f'},h('span',{class:'lab',text:T('Saints')}),checks,plusBtn(function(){addSaintInline(function(sa){var c=h('input',{type:'checkbox',value:sa.id});c.checked=true;checks.append(h('label',{},c,av(sa.id),short(sa)));checks.dispatchEvent(new Event('change'));['vakta','kvakta'].forEach(function(kk){var el=F[kk];if(el&&sa.role==='Vakta'&&![].slice.call(el.options).some(function(o){return o.value===sa.id}))el.append(h('option',{value:sa.id,text:sa.name}))})},false,haveIn(checks))}));
+ var saintsBox=h('div',{class:'f'},h('span',{class:'lab',text:T('Saints')}),allLbl,checks,plusBtn(function(){addSaintInline(function(sa){var c=h('input',{type:'checkbox',value:sa.id});c.checked=true;checks.append(h('label',{},c,av(sa.id),short(sa)));checks.dispatchEvent(new Event('change'));['vakta','kvakta'].forEach(function(kk){var el=F[kk];if(el&&sa.role==='Vakta'&&![].slice.call(el.options).some(function(o){return o.value===sa.id}))el.append(h('option',{value:sa.id,text:sa.name}))})},false,haveIn(checks))}));
 
  e.cars=(e.cars||[]).map(function(c){return {saints:(c.saints||[]).slice(),driver:c.driver||''}});
  var carsBox=h('div',{style:'display:flex;flex-direction:column;gap:10px'});
