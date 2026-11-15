@@ -624,12 +624,16 @@ function setTimeMode(m){ui.timeMode=m;try{if(m)localStorage.setItem('timeMode',m
 function convActive(){return ui.timeMode!=='program'&&!!devTz()}
 var VC=false,CV={};
 function conv(e){
- if(!e.start||(e.endDate&&e.endDate!==e.date))return null;
+ if(!e.start)return null;
+ // A daily event over a date range (e.g. lunch 24 Dec to 3 Jan) repeats at the same local time each day: convert it for the day being viewed.
+ var multi=!!(e.endDate&&e.endDate!==e.date),ref=e.date;
+ if(multi&&e.type!=='lunch'&&e.type!=='rest')return null;
+ if(multi){ref=ui.date||e.date;if(ref<e.date)ref=e.date;if(ref>e.endDate)ref=e.endDate}
  var te=evTz(e),tv=devTz();if(!te||!tv||te===tv)return null;
- var key=[e.id,e.date,e.start,e.end,te,tv].join('|');if(key in CV)return CV[key];
- var r=null;try{var a=fromUtc(toUtc(e.date,e.start,te),tv),en='';
-  if(e.end){var d2=toMin(e.end)>toMin(e.start)?e.date:addDays(e.date,1);en=fromUtc(toUtc(d2,e.end,te),tv).time}
-  r={date:a.date,start:a.time,end:en}}catch(x){r=null}
+ var key=[e.id,ref,e.start,e.end,te,tv].join('|');if(key in CV)return CV[key];
+ var r=null;try{var a=fromUtc(toUtc(ref,e.start,te),tv),en='';
+  if(e.end){var d2=toMin(e.end)>toMin(e.start)?ref:addDays(ref,1);en=fromUtc(toUtc(d2,e.end,te),tv).time}
+  r={date:multi?ref:a.date,start:a.time,end:en}}catch(x){r=null}
  CV[key]=r;return r}
 function dt(e){var c=VC?conv(e):null;return c||{start:e.start,end:e.end}}
 function evsOnView(d){
