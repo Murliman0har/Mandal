@@ -873,6 +873,8 @@ function planView(){
  if(!tours.length)root.append(h('div',{class:'empty',text:ui.canEdit?'No tours yet. Use Add tour.':'No tours yet.'}));
  if(tsel)root.append(h('button',{class:'btn sm',type:'button',style:'align-self:flex-start',onclick:function(){pickTour('')}},lang==='gu'?'બધી યાત્રાઓ બતાવો':'Show all tours'));
  return root}
+// First day of a parayan series (same title and place): a parayan belongs to the mandir where it starts, not the one we move to on its last day.
+function serStart(e){var m=e.date;state.events.forEach(function(x){if(x.type===e.type&&x.title===e.title&&x.place===e.place&&x.date<m)m=x.date});return m}
 function nrm(x){return String(x||'').toLowerCase().replace(/[^a-z0-9઀-૿]/g,'')}
 function planDetail(t){
  var root=h('div',{style:'display:flex;flex-direction:column;gap:10px'}),cur=stayIn([t],today()),yo={weekday:'short',day:'numeric',month:'short',year:'numeric'};
@@ -887,7 +889,7 @@ function planDetail(t){
    kl.map(function(sa){return h('div',{style:gr},h('span',{text:nm(sa.id)}),h('span',{style:'white-space:pre-wrap',text:kr[sa.id]||'\u2014'}))})))}
  t.stays.forEach(function(s){
   var n=diff(s.start,s.end)+1,seen={},tags=[];
-  state.events.forEach(function(e){if(['parayan','katha','pothiyatra','padramani','vastu','outing','sabha','pravachan'].indexOf(e.type)>-1&&e.date<=s.end&&(e.endDate||e.date)>=s.start&&(nrm(e.place)===nrm(s.place)||(!state.stays.some(function(x){return nrm(x.place)===nrm(e.place)})&&(stayFor(e.date)||{}).id===s.id))){var dd=e.date<s.start?s.start:e.date;if(!seen[e.type]||dd<seen[e.type])seen[e.type]=dd}});
+  state.events.forEach(function(e){if(['parayan','katha','pothiyatra','padramani','vastu','outing','sabha','pravachan'].indexOf(e.type)>-1&&e.date<=s.end&&(e.endDate||e.date)>=s.start&&(nrm(e.place)===nrm(s.place)||(!state.stays.some(function(x){return nrm(x.place)===nrm(e.place)})&&(stayFor(e.type==='parayan'?serStart(e):e.date)||{}).id===s.id))){var dd=e.date<s.start?s.start:e.date;if(!seen[e.type]||dd<seen[e.type])seen[e.type]=dd}});
   Object.keys(seen).forEach(function(ty){tags.push(h('span',{class:'tag t-'+ty,role:'link',tabindex:'0',style:'cursor:pointer',text:typeLabel(ty),onclick:function(ev){ev.stopPropagation();ev.preventDefault();ui.date=seen[ty];ui.view='day';render();window.scrollTo(0,0);setTimeout(function(){var c=document.querySelector('.ev.t-'+ty);if(c)c.scrollIntoView({behavior:'smooth',block:'center'})},150)}}))});
   root.append(h('div',{style:'display:flex;flex-direction:column;gap:4px'},
    h('button',{class:'stay'+(cur&&cur.id===s.id?' cur':''),type:'button',onclick:function(){ui.date=s.start;ui.view='day';render();window.scrollTo(0,0)}},
