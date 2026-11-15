@@ -1305,9 +1305,9 @@ function openForm(ev){
  var tzSelE=tzSelect(e.tz||'','Auto (place of the stay'+(stayTzOn(e.date||ui.date)?': '+tzShort(stayTzOn(e.date||ui.date)):'')+')');
  function tourFor(dt){var m=null,bl=1e9;tours.forEach(function(t){if(t.start<=dt&&dt<=t.end){var l=diff(t.start,t.end);if(l<bl){bl=l;m=t}}});return m?m.id:''}
  var initTour=isNew&&curTour()?curTour().id:(e.tour&&tours.some(function(t){return t.id===e.tour})?e.tour:tourFor(e.date));
- var tourSel=sel([['',lang==='gu'?'કોઈ યાત્રા નહીં':'No tour']].concat(tours.map(function(t){return[t.id,t.name]})),initTour);
+ var tourSel=sel([['',lang==='gu'?'કોઈ યાત્રા નહીં':'No tour']].concat(tours.filter(function(t){return tourStatus(t)!=='finished'||(!isNew&&t.id===initTour)}).map(function(t){return[t.id,t.name]})),initTour);
  // One box to tick or untick every saint in this event.
- var allBox=h('input',{type:'checkbox'}),allLbl=h('label',{style:'display:flex;align-items:center;gap:6px;font-weight:600;margin:0 0 6px;text-transform:none;letter-spacing:0'},allBox,lang==='gu'?'બધા સંતો':'All saints');
+ var allBox=h('input',{type:'checkbox','aria-label':lang==='gu'?'બધા સંતો':'All saints',title:lang==='gu'?'બધા સંતો':'All saints'}),allLbl=h('label',{style:'display:flex;align-items:center;gap:6px;font-weight:600;margin:0 0 6px;text-transform:none;letter-spacing:0'},allBox);
  function syncAll(){var cs=[].slice.call(checks.querySelectorAll('input'));allBox.checked=cs.length>0&&cs.every(function(c){return c.checked})}
  allBox.addEventListener('change',function(){[].slice.call(checks.querySelectorAll('input')).forEach(function(c){c.checked=allBox.checked});checks.dispatchEvent(new Event('change'))});
  checks.addEventListener('change',syncAll);syncAll();
