@@ -584,7 +584,7 @@ function autoTour(){var ts=state.tours||[],cur=ts.find(function(x){return x.id==
  var pick=ts.filter(function(t){return tourStatus(t)==='ongoing'})[0]||ts.filter(function(t){return tourStatus(t)==='upcoming'}).sort(function(a,b){return a.start<b.start?-1:1})[0];
  if(pick){ui.tourSel=pick.id;if(ui.date<pick.start||ui.date>pick.end)ui.date=pick.start<today()&&today()<=pick.end?today():pick.start}}
 function selIdsHas(id){return String(ui.tourSel||'').split(',').indexOf(id)>-1}
-function selTours(){var ids=String(ui.tourSel||'').split(',').filter(Boolean),all=state.tours||[];return ids.map(function(id){return all.find(function(x){return x.id===id})}).filter(function(t){return t&&tourStatus(t)!=='finished'})}
+function selTours(){var ids=String(ui.tourSel||'').split(',').filter(Boolean),all=state.tours||[];return ids.map(function(id){return all.find(function(x){return x.id===id})}).filter(Boolean)}
 function curTour(){var ts=selTours();if(!ts.length)ui.tourSel='';return ts.length===1?ts[0]:null}
 // An event belongs to the tour it was saved under; older events belong to the most specific (shortest) tour whose dates contain them.
 function ownerTour(e){var ts=state.tours||[];if(e.tour&&ts.some(function(t){return t.id===e.tour}))return e.tour;var best=null,bl=1e9;ts.forEach(function(t){if(t.start<=e.date&&e.date<=t.end){var l=diff(t.start,t.end);if(l<bl){bl=l;best=t}}});return best?best.id:''}
