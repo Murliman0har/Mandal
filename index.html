@@ -813,10 +813,14 @@ function dayView(){
      h('span',{class:'patl',text:'\u{1FA94} '+(evTitle(r)||typeLabel('parayan'))+(r.n>1?' \u00b7 '+(lang==='gu'?dayOf(r.k,r.n):'Day '+r.k+' of '+r.n):'')}),
      bits.length?h('span',{class:'meta',text:bits.join(' \u00b7 ')}):null,
      (ui.canEdit&&canEditDate(r.date||ui.date))?h('div',{class:'row'},h('button',{class:'btn sm',type:'button',onclick:function(){openWhole(r.title,r.place)}},lang==='gu'?'આખું પારાયણ સુધારો':(r.n>1?'Edit Parayan (Day 1 to '+r.n+')':'Edit Parayan'))):null)},prsFrom=shiftFrom?prs.filter(function(r){return r.place?nrm(r.place)===nrm(shiftFrom.place):(r.f<d&&r.f>=shiftFrom.start)}):[],prsTo=shiftFrom?prs.filter(function(r){return prsFrom.indexOf(r)<0}):prs;
+  // Shift day, viewing today: before the Mandir shift time the card shows only the mandir we are leaving; from that time on, only the next mandir.
+  var shEv=shiftFrom?evs.find(function(e){return e.type==='car'&&toMin(dt(e).start)!=null}):null,shMin=shEv?toMin(dt(shEv).start):null,nowM=new Date().getHours()*60+new Date().getMinutes(),
+   shMode=(shiftFrom&&shMin!=null&&d===today())?(nowM>=shMin?'to':'from'):'both';
+  if(shMode==='from')meta=[trPlace(shiftFrom.region),gu?'આજે '+trPlace(st.place)+' તરફ પ્રસ્થાન':'Moving to '+st.place+' today'].filter(Boolean);
   root.append(h('div',{class:'place pat',style:'position:relative'},st?h('div',{class:'meta',text:T('Where we are')}):null,st?whereEyeEls(d,st,ovF,ovFIds,sOn):null,
-   shiftFrom?h('div',{class:'where',text:trPlace(shiftFrom.place)}):null,shiftFrom?prsFrom.map(prCard):null,shiftFrom?h('div',{class:'meta',style:'margin:4px 0',text:'\u2193 '+(lang==='gu'?'મંદિર બદલી':'Mandir shift')}):null,
-   st?h('div',{class:'where',text:allOv?ov.map(function(g){return trPlace(g.l)}).join(' · '):trPlace(st.place)}):null,meta.length?h('div',{class:'meta',text:meta.join(' · ')}):null,
-   shiftFrom?prsTo.map(prCard):null,
+   shiftFrom&&shMode!=='to'?h('div',{class:'where',text:trPlace(shiftFrom.place)}):null,shiftFrom&&shMode!=='to'?prsFrom.map(prCard):null,shiftFrom&&shMode==='both'?h('div',{class:'meta',style:'margin:4px 0',text:'\u2193 '+(lang==='gu'?'મંદિર બદલી':'Mandir shift')}):null,
+   st&&shMode!=='from'?h('div',{class:'where',text:allOv?ov.map(function(g){return trPlace(g.l)}).join(' · '):trPlace(st.place)}):null,meta.length?h('div',{class:'meta',text:meta.join(' · ')}):null,
+   shiftFrom&&shMode!=='from'?prsTo.map(prCard):null,
    shiftFrom?null:prsTo.map(prCard),
    adays.map(function(e){
     return h('div',{style:'margin-top:6px;display:flex;align-items:center;gap:8px;flex-wrap:wrap'},
