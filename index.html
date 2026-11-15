@@ -1206,7 +1206,7 @@ function tourPicker(){
  return h('div',{style:'display:flex;flex-direction:column;gap:6px;margin-bottom:10px'},
   h('b',{text:gu?'યાત્રા':'Tour'}),
   h('p',{class:'note',style:'margin:0',text:gu?'એક કે વધુ યાત્રા એક પછી એક ટેપ કરીને જોડો. ફરી ટેપ કરો તો કાઢી નાખશે. કોઈ ન હોય તો ચાલુ અને આવનારી યાત્રાઓ દેખાય છે.':'Tap one or more tours to combine them. Tap again to remove. With none tapped you see the ongoing and upcoming tours.'}),
-  tourGroups(tours).filter(function(g){return g[0]!=='finished'}).map(function(g){var kids=g[2].map(function(t){return chip(t.id,t.name,fmt(t.start,yo)+' – '+fmt(t.end,yo),selIdsHas(t.id))});
+  tourGroups(tours).map(function(g){var kids=g[2].map(function(t){return chip(t.id,t.name,fmt(t.start,yo)+' – '+fmt(t.end,yo),selIdsHas(t.id))});
    if(g[0]==='finished'){var dd=h('details',{style:'opacity:.7'},h('summary',{style:'cursor:pointer;font-weight:600;margin:4px 0',text:g[1]+' ('+g[2].length+')'}),h('div',{style:'display:flex;flex-direction:column;gap:6px;margin-top:6px'},kids));if(g[2].some(function(t){return selIdsHas(t.id)}))dd.open=true;return dd}
    return h('div',{style:'display:flex;flex-direction:column;gap:6px'},h('b',{style:'font-size:13px',text:g[1]}),kids)}))}
 function sideTab(){
