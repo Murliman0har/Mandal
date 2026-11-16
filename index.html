@@ -695,7 +695,7 @@ function evCard(e,isNow,isNext){
  if(e.type==='flight'){add('Flight',e.flight)}
  if(YAJ.indexOf(e.type)>-1)add('Yajman',e.yajman);
  if(e.notes)kv.push(h('dt',{text:T('Notes')}),h('dd',{class:'wrapok',text:tr(e.notes)}));
- return h('article',{class:'ev t-'+e.type+(isNow?' now':''),'data-eid':e.id},
+ return h('article',{class:'ev t-'+e.type+(isNow?' now':''),'data-eid':e.id,style:(e.type==='other'&&/^#[0-9a-fA-F]{6}$/.test(e.color||''))?'--c:'+e.color:null},
   STK[e.type]?h('img',{class:'ksticker k-'+e.type+(isNow?' now':''),src:STK[e.type],alt:'','aria-hidden':'true',loading:'lazy'}):null,
   isNow?fxEls(e.type):null,
   h('div',{class:'rail'+(isNow?' prog':'')},isNow?h('i',{class:'fill',style:'width:'+nowPct(e)+'%'}):null,h('b',{text:tl[0]}),tl[1]?h('span',{text:tl[1]}):null,h('span',{class:'rtag',text:evTypeLabel(e)}),e.type==='rest'?h('span',{class:'moon','aria-hidden':'true'}):null,e.type==='pravachan'?h('span',{class:'mtag',text:'⏱ '+dg(durOf(e))+(lang==='gu'?' મિનિટ':' min')}):null,isNow?h('span',{class:'pill now',text:lang==='gu'?'ચાલુ':'ON'}):null),
@@ -1290,6 +1290,11 @@ function openForm(ev){
  var F={};
  function field(id,label,el,extra){F[id]=el;el.id='f_'+id;return h('div',{class:'f'},h('label',{for:'f_'+id,text:label}),el,extra)}
  function inp(id,type,val){return h('input',{type:type||'text',value:val||''})}
+ // Colour choice for "Other" events: tap a swatch; the first (empty) one keeps the default grey.
+ function colorField(){var cols=['','#E53935','#F57C00','#F9A825','#43A047','#00897B','#1E88E5','#3949AB','#8E24AA','#D81B60','#6D4C41'],hid=h('input',{type:'hidden',value:/^#[0-9a-fA-F]{6}$/.test(e.color||'')?e.color:''}),row=h('div',{class:'row',style:'gap:8px;flex-wrap:wrap;margin-top:4px'});
+  function paint(){[].slice.call(row.children).forEach(function(b){var on=b.getAttribute('data-c')===hid.value;b.style.outline=on?'3px solid var(--text,#fff)':'1px solid rgba(128,128,128,.5)';b.style.outlineOffset=on?'2px':'0';b.setAttribute('aria-pressed',on?'true':'false')})}
+  cols.forEach(function(c){var b=h('button',{type:'button','data-c':c,'aria-label':c||'Default colour',title:c||'Default colour',style:'width:30px;height:30px;border-radius:50%;border:0;padding:0;cursor:pointer;background:'+(c||'var(--c-other,#52525B)'),onclick:function(){hid.value=c;paint()}});if(!c)b.textContent='\u21BA',b.style.color='#fff',b.style.fontSize='14px';row.append(b)});
+  var f=field('color',lang==='gu'?'રંગ':'Colour',hid,row);paint();return f}
  function vplus(k){return plusBtn(function(){addSaintInline(function(sa){['vakta','kvakta'].forEach(function(kk){var el=F[kk];if(el&&![].slice.call(el.options).some(function(o){return o.value===sa.id}))el.append(h('option',{value:sa.id,text:sa.name}))});F[k].value=sa.id},true,haveIn(F[k]))})}
  function sel(opts,val){var s=h('select',{});opts.forEach(function(o){var op=h('option',{value:o[0],text:o[1]});if(o[0]===val)op.selected=true;s.append(op)});return s}
  var saintOpts=[['','Not chosen']].concat(vaktaList(e.vakta,e.date).map(function(s){return[s.id,s.name]}));
@@ -1355,7 +1360,7 @@ function openForm(ev){
   h('div',{class:'row',style:'align-items:center;gap:10px'},isNew?null:delBtn,h('h2',{style:'margin:0',text:isNew?T('Add event'):T('Edit event')})),
   tours.length?field('tour',lang==='gu'?'યાત્રા':'Tour',tourSel):null,
   field('type',T('Type'),typeSel),
-  grp('oth',[field('otherLabel','Write your own label (shown instead of "Other")',inp('otherLabel','text',e.otherLabel))]),
+  grp('oth',[field('otherLabel','Write your own label (shown instead of "Other")',inp('otherLabel','text',e.otherLabel)),colorField()]),
   field('title',T('Title'),inp('title','text',e.title)),
   field('titleGu','Title in Gujarati (shown when the app is in Gujarati)',inp('titleGu','text',e.titleGu),h('p',{class:'note',style:'margin:2px 0 0',text:'Filled in automatically from the English title. Change it if it is wrong.'})),
   h('div',{class:'two'},field('date',T('Date'),inp('date','date',e.date)),field('endDate',T('Last day (multi-day only)'),inp('endDate','date',e.endDate))),
@@ -1402,7 +1407,7 @@ function openForm(ev){
  if(tourSel.value)applyTour(isNew);
  function commit(){
   var t=typeSel.value;
-  e.type=t;if(t==='other'&&F.otherLabel.value.trim())e.otherLabel=F.otherLabel.value.trim();else delete e.otherLabel;e.title=F.title.value.trim();if(F.titleGu.value.trim())e.titleGu=F.titleGu.value.trim();else delete e.titleGu;e.date=F.date.value;e.endDate=F.endDate.value&&F.endDate.value>F.date.value?F.endDate.value:'';
+  e.type=t;if(t==='other'&&F.otherLabel.value.trim())e.otherLabel=F.otherLabel.value.trim();else delete e.otherLabel;if(t==='other'&&F.color.value)e.color=F.color.value;else delete e.color;e.title=F.title.value.trim();if(F.titleGu.value.trim())e.titleGu=F.titleGu.value.trim();else delete e.titleGu;e.date=F.date.value;e.endDate=F.endDate.value&&F.endDate.value>F.date.value?F.endDate.value:'';
   if(tzSelE.value)e.tz=tzSelE.value;else delete e.tz;
   if(tourSel.value)e.tour=tourSel.value;else delete e.tour;
   e.start=F.start.value;e.end=F.end.value;e.place=F.place.value.trim();e.notes=F.notes.value.trim();
