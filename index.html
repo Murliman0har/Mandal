@@ -1254,7 +1254,7 @@ function signOut(){
  Promise.race([stopPush,new Promise(function(r){setTimeout(r,4000)})]).then(function(){
   setPass('');try{localStorage.removeItem('tourCache')}catch(x){}
   state={tripStart:state.tripStart,tripEnd:state.tripEnd,stays:[],events:[],saints:[]};
-  clearDraft();picCache={};ui.authed=false;ui.canEdit=false;ui.editTours=null;ui.offline=false;ui.role='';ui.admin=false;ui.gname='';ui.rem='';ui.remMsg='';ui.sideOpen=false;ui.dirty=0;ui.msg='';ui.gateMsg='';
+  clearDraft();picCache={};ME='mm';ui.authed=false;ui.canEdit=false;ui.editTours=null;ui.offline=false;ui.role='';ui.admin=false;ui.gname='';ui.rem='';ui.remMsg='';ui.sideOpen=false;ui.dirty=0;ui.msg='';ui.gateMsg='';
   render()})}
 function render(){
  var root=$('#root');root.textContent='';
@@ -1714,12 +1714,12 @@ function enter(pass){
  ui.gateMsg='';ui.busy=true;render();
  return Promise.race([rpc('get_tour_state',{p_passcode:pass}),new Promise(function(_,rj){setTimeout(function(){rj({message:'timeout'})},10000)})]).then(function(res){
   if(!res||!res.data||!res.data.events)throw {message:'empty'};
-  setPass(pass);try{localStorage.setItem('tourCache',JSON.stringify({pass:pass,res:res}))}catch(x){}state=res.data;normState();autoTour();ui.role=res.role;ui.admin=!!res.admin;ui.gname=res.name||'';ui.gsaint=res.saint_id||'';if(ui.gsaint&&ui.viaLink){ui.sel=[ui.gsaint];saveSel()}ui.viaLink=false;ui.editTours=(res.role==='editor'&&Array.isArray(res.edit_tours))?res.edit_tours:null;ui.canEdit=res.role==='editor'&&(!scoped()||ui.editTours.length>0);if(scoped()&&ui.editTours.length===1&&!ui.tourSel){ui.tourSel=ui.editTours[0];try{localStorage.setItem('tourSel',ui.tourSel)}catch(x){}}ui.base=JSON.stringify(state);ui.offline=false;var dr=ui.canEdit?readDraft(pass):null;if(dr){try{state=mergeState(JSON.parse(dr.base),dr.state,state);normState();ui.dirty=1;ui.pendingSync=true}catch(x){}}ui.authed=true;ui.autoNow=true;ui.busy=false;ui.date=calClamp(today());render();loadTithi();remRefresh().then(render);prefetchPics();if(ui.pendingSync){ui.pendingSync=false;ui.fromDraft=true;save()}
+  setPass(pass);try{localStorage.setItem('tourCache',JSON.stringify({pass:pass,res:res}))}catch(x){}state=res.data;normState();autoTour();ui.role=res.role;ui.admin=!!res.admin;ui.gname=res.name||'';ui.gsaint=res.saint_id||'';ME=ui.gsaint||'mm';if(ui.gsaint&&ui.viaLink){ui.sel=[ui.gsaint];saveSel()}ui.viaLink=false;ui.editTours=(res.role==='editor'&&Array.isArray(res.edit_tours))?res.edit_tours:null;ui.canEdit=res.role==='editor'&&(!scoped()||ui.editTours.length>0);if(scoped()&&ui.editTours.length===1&&!ui.tourSel){ui.tourSel=ui.editTours[0];try{localStorage.setItem('tourSel',ui.tourSel)}catch(x){}}ui.base=JSON.stringify(state);ui.offline=false;var dr=ui.canEdit?readDraft(pass):null;if(dr){try{state=mergeState(JSON.parse(dr.base),dr.state,state);normState();ui.dirty=1;ui.pendingSync=true}catch(x){}}ui.authed=true;ui.autoNow=true;ui.busy=false;ui.date=calClamp(today());render();loadTithi();remRefresh().then(render);prefetchPics();if(ui.pendingSync){ui.pendingSync=false;ui.fromDraft=true;save()}
  }).catch(function(err){
   ui.busy=false;ui.authed=false;
   if(/bad_passcode/.test(JSON.stringify(err||{}))){setPass('');try{localStorage.removeItem('tourCache')}catch(x){}ui.gateMsg=ui.viaLink?'This link is not active. Please ask for a new link.':'Wrong password.'}
   else{var c=null;try{c=JSON.parse(localStorage.getItem('tourCache')||'null')}catch(x){}
-   if(c&&c.pass===pass&&c.res&&c.res.data){state=c.res.data;normState();autoTour();ui.base=JSON.stringify(state);var cr=c.res.role==='editor';ui.role=cr?'editor':'reader';ui.editTours=(cr&&Array.isArray(c.res.edit_tours))?c.res.edit_tours:null;ui.canEdit=cr&&(!scoped()||ui.editTours.length>0);ui.admin=false;var dr2=ui.canEdit?readDraft(pass):null;if(dr2){state=dr2.state;normState();ui.dirty=1;ui.base=dr2.base;ui.waiting=true}ui.authed=true;ui.autoNow=true;ui.offline=true;ui.date=calClamp(today());render();return}
+   if(c&&c.pass===pass&&c.res&&c.res.data){state=c.res.data;normState();autoTour();ME=c.res.saint_id||'mm';ui.base=JSON.stringify(state);var cr=c.res.role==='editor';ui.role=cr?'editor':'reader';ui.editTours=(cr&&Array.isArray(c.res.edit_tours))?c.res.edit_tours:null;ui.canEdit=cr&&(!scoped()||ui.editTours.length>0);ui.admin=false;var dr2=ui.canEdit?readDraft(pass):null;if(dr2){state=dr2.state;normState();ui.dirty=1;ui.base=dr2.base;ui.waiting=true}ui.authed=true;ui.autoNow=true;ui.offline=true;ui.date=calClamp(today());render();return}
    ui.gateMsg='Could not open the program. Check your connection and try again.'}
   render()})}
 function drawGate(){
