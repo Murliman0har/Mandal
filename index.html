@@ -590,6 +590,8 @@ function curTour(){var ts=selTours();if(!ts.length)ui.tourSel='';return ts.lengt
 function ownerTour(e){var ts=state.tours||[];if(e.tour&&ts.some(function(t){return t.id===e.tour}))return e.tour;var best=null,bl=1e9;ts.forEach(function(t){if(t.start<=e.date&&e.date<=t.end){var l=diff(t.start,t.end);if(l<bl){bl=l;best=t}}});return best?best.id:''}
 function finEv(e){var id=ownerTour(e),t=id&&(state.tours||[]).find(function(x){return x.id===id});return !!t&&tourStatus(t)==='finished'}
 function dayAll(d){var ts=selTours();if(ts.length&&!ts.some(function(t){return t.start<=d&&d<=t.end}))return [];var ids={};ts.forEach(function(t){ids[t.id]=1});return state.events.filter(function(e){return e.date<=d&&d<=(e.endDate||e.date)&&(ts.length?!!ids[ownerTour(e)]:!finEv(e))})}
+// In the Summary a pravachan counts only for the vakta who gives it, not for every saint present.
+function hasSelSum(e){if(e.type==='pravachan'&&e.vakta&&ui.sel.length)return ui.sel.indexOf(e.vakta)>-1;return hasSel(e)}
 function hasSel(e){return !ui.sel.length||ui.sel.some(function(id){return e.saints.indexOf(id)>-1})}
 function parOn(d){var seen={},out=[];
  dayAll(d).forEach(function(e){if(e.type!=='parayan')return;var k=e.title+'|'+e.place;if(seen[k])return;seen[k]=1;
@@ -1031,7 +1033,7 @@ function inYatra(e){return e.date>=state.tripStart&&e.date<=state.tripEnd}
 function sumView(){
  var root=h('div',{style:'display:flex;flex-direction:column;gap:14px'}),by={};
  var tsS=selTours(),tour=tsS.length===1?tsS[0]:tsS.length>1?{id:'*',name:tsS.map(function(t){return t.name}).join(' + '),start:tsS.map(function(t){return t.start}).sort()[0],end:tsS.map(function(t){return t.end}).sort().reverse()[0],stays:[].concat.apply([],tsS.map(function(t){return t.stays||[]})),ids:tsS.reduce(function(o,t){o[t.id]=1;return o},{})}:null,scope=tour?'yatra':(ui.sumScope||'yatra'),isY=scope==='yatra',lo=tour?tour.start:state.tripStart,hi=tour?tour.end:state.tripEnd,stayList=tour?(tour.stays||[]):state.stays;
- var evs=state.events.filter(function(e){return e.type!=='rest'&&e.type!=='lunch'&&e.type!=='pothiyatra'&&(tour?(e.date>=lo&&e.date<=hi&&(tour.ids?!!tour.ids[ownerTour(e)]:ownerTour(e)===tour.id)):(inYatra(e)===isY&&!finEv(e)))&&hasSel(e)});
+ var evs=state.events.filter(function(e){return e.type!=='rest'&&e.type!=='lunch'&&e.type!=='pothiyatra'&&(tour?(e.date>=lo&&e.date<=hi&&(tour.ids?!!tour.ids[ownerTour(e)]:ownerTour(e)===tour.id)):(inYatra(e)===isY&&!finEv(e)))&&hasSelSum(e)});
  if(tour)root.append(h('h3',{style:'margin:0',text:tour.name}));
  else root.append(h('div',{class:'chips',role:'group','aria-label':'Summary of'},
   [['yatra',T('All tours')],['other',T('Other days')]].map(function(x){return h('button',{class:'chip',type:'button','aria-pressed':scope===x[0]?'true':'false',style:'padding:6px 14px',onclick:function(){ui.sumScope=x[0];ui.sumOpen='';render()}},x[1])})));
@@ -1059,6 +1061,10 @@ function sumView(){
    var kr=Object.keys(kc).filter(Boolean).sort(function(x,y){return kc[y]-kc[x]}).map(function(id){return h('div',{class:'fill'},h('span',{text:sName(id)}),h('b',{text:dg(kc[id])+' '+T(kc[id]===1?'session':'sessions')}))});
    if(kc[''])kr.push(h('div',{class:'fill'},h('span',{text:T('Vakta not chosen')}),h('b',{text:dg(kc[''])+' '+T(kc['']===1?'session':'sessions')})));
    if(kr.length)rows.unshift(h('div',{style:'display:flex;flex-direction:column;gap:6px;margin-bottom:8px'},h('b',{text:T('Katha sessions by Vakta')}),kr))}
+  if(k==='pravachan'){var vc={};by.pravachan.forEach(function(e){vc[e.vakta||'']=(vc[e.vakta||'']||0)+1});
+   var vr=Object.keys(vc).filter(Boolean).sort(function(x,y){return vc[y]-vc[x]}).map(function(id){return h('div',{class:'fill'},h('span',{text:sName(id)}),h('b',{text:dg(vc[id])+' '+T(vc[id]===1?'session':'sessions')}))});
+   if(vc[''])vr.push(h('div',{class:'fill'},h('span',{text:T('Vakta not chosen')}),h('b',{text:dg(vc[''])+' '+T(vc[''] ===1?'session':'sessions')})));
+   if(vr.length)rows.unshift(h('div',{style:'display:flex;flex-direction:column;gap:6px;margin-bottom:8px'},h('b',{text:lang==='gu'?'વક્તા પ્રમાણે પ્રવચન':'Pravachan by Vakta'}),vr))}
   root.append(h('div',{class:'card t-'+k,id:'sumDetail'},h('div',{class:'row',style:'justify-content:space-between'},h('h3',{text:typeLabel(k)+' ('+dg(count(k))+')'}),h('button',{class:'btn sm',type:'button','aria-label':lang==='gu'?'ઉપર':'Back up',onclick:function(){var t=document.getElementById('sumTiles');if(t)t.scrollIntoView({behavior:'smooth',block:'start'})}},'↑')),rows.length?rows:h('div',{class:'faint',text:T('Nothing noted yet.')})))}
  else root.append(h('p',{class:'note',text:T('Tap a box to see the list.')}));
  var noV=by.parayan.filter(function(e){return !e.vakta}).length,noS=by.parayan.filter(function(e){return !e.shastra}).length;
