@@ -828,6 +828,7 @@ function dayView(){
   root.append(h('div',{class:'place pat',style:'position:relative'},st?h('div',{class:'meta',text:T('Where we are')}):null,st?whereEyeEls(d,st,ovF,ovFIds,sOn):null,
    shiftFrom&&shMode!=='to'?h('div',{class:'where',text:trPlace(shiftFrom.place)}):null,shiftFrom&&shMode!=='to'?prsFrom.map(prCard):null,shiftFrom&&shMode==='both'?h('div',{class:'meta',style:'margin:4px 0',text:'\u2193 '+(lang==='gu'?'મંદિર બદલી':'Mandir shift')}):null,
    st&&shMode!=='from'?h('div',{class:'where',text:allOv?ov.map(function(g){return trPlace(g.l)}).join(' · '):trPlace(st.place)}):null,meta.length?h('div',{class:'meta',text:meta.join(' · ')}):null,
+   (st&&st.cardText&&shMode!=='from')?h('div',{class:'note',style:'margin:2px 0;font-weight:600',text:st.cardText}):null,
    shiftFrom&&shMode!=='from'?prsTo.map(prCard):null,
    shiftFrom?null:prsTo.map(prCard),
    adays.map(function(e){
@@ -1007,14 +1008,14 @@ function openStay(t,s){
  var delBtn=delIcon(h('button',{class:'btn danger',type:'button',title:T('Delete'),'aria-label':T('Delete'),style:'padding:6px 9px;line-height:0',onclick:function(){if(!confirm('Delete this stay?'))return;t.stays=t.stays.filter(function(x){return x.id!==q.id});state.events=state.events.filter(function(x){return !(x.auto&&x.auto.indexOf(q.id+':')===0)});syncStays();ui.dirty++;modal.remove();render()}}));
  var form=h('form',{class:'form',onsubmit:function(x){x.preventDefault();
   q.place=F.place.value.trim();if(!q.place){(placeSel&&placeSel.value!=='__new'?placeSel:F.place).focus();return}
-  q.region=F.region.value.trim();if(tzSelS.value)q.tz=tzSelS.value;else delete q.tz;q.start=F.start.value||q.start;q.end=F.end.value&&F.end.value>=q.start?F.end.value:q.start;
+  q.region=F.region.value.trim();if(F.cardText.value.trim())q.cardText=F.cardText.value.trim();else delete q.cardText;if(tzSelS.value)q.tz=tzSelS.value;else delete q.tz;q.start=F.start.value||q.start;q.end=F.end.value&&F.end.value>=q.start?F.end.value:q.start;
   var i=t.stays.findIndex(function(y){return y.id===q.id});if(i>-1)t.stays[i]=q;else t.stays.push(q);
   if(q.start<t.start)t.start=q.start;if(q.end>t.end)t.end=q.end;
   ovr=!isNew&&ovrCk.checked;
   syncDaily('pothiyatra',F.aS.value,F.aE.value);syncDaily('pothiyatra',F.a2S.value,F.a2E.value,'2');syncDaily('katha',F.kS.value,F.kE.value);syncDaily('katha',F.k2S.value,F.k2E.value,'2');
   syncStays();ui.dirty++;modal.remove();render()}},
   h('div',{class:'row',style:'align-items:center;gap:10px'},isNew?null:delBtn,h('h2',{style:'margin:0',text:isNew?'Add mandir':'Edit mandir'})),
-  placeF,field('region','Region (optional)','text',q.region),
+  placeF,field('region','Region (optional)','text',q.region),field('cardText','Text on the top card (optional)','text',q.cardText),
   h('div',{class:'f'},h('label',{text:'Time zone'}),tzSelS,h('p',{class:'note',style:'margin:2px 0 0',text:'Times for this stay are in this zone. Other saints see them in their own phone time.'})),
   h('div',{class:'two'},field('start','From date','date',q.start),field('end','To date','date',q.end)),
   h('div',{class:'f'},h('span',{class:'lab',text:'Daily programs'}),h('p',{class:'note',style:'margin:0',text:'Set a time to add that program on every day of this stay, morning and evening. Clear a start time to remove it from all days.'})),
