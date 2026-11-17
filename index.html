@@ -1732,6 +1732,13 @@ function enter(pass){
   render()})}
 function drawGate(){
  var r=document.getElementById('root');r.textContent='';
+ // A saved password is being checked: show the logo and greeting, not the password page.
+ if(ui.busy||(getPass()&&!ui.gateMsg)){
+  r.append(h('div',{class:'wrap',style:'align-items:center;justify-content:center;min-height:80vh;text-align:center;gap:10px',role:'status','aria-label':'Opening'},
+   h('img',{src:'icon-192.png',alt:'',width:'112',height:'112',style:'width:112px;height:112px;border-radius:24px'}),
+   h('h1',{style:'margin:8px 0 0',text:'જય શ્રી સ્વામિનારાયણ'}),
+   h('p',{class:'note',style:'margin:0',text:'Jay Shree Swaminarayan'})));
+  return}
  var inp=h('input',{type:'password',id:'gp',autocomplete:'current-password',placeholder:'Password'});
  var form=h('form',{class:'form',style:'margin-top:18vh',onsubmit:function(e){e.preventDefault();var v=inp.value.trim();if(v){ui.viaLink=false;enter(v)}}},
   h('h1',{text:'London Yatra'}),
