@@ -1069,12 +1069,13 @@ function sumView(){
    var pr=Object.keys(pc).filter(function(id){return id&&id.charAt(0)!=='~'}).sort(function(x,y){return pc[y]-pc[x]}).map(function(id){return h('div',{class:'fill'},h('span',{text:sName(id)}),h('b',{text:fr(id)}))});
    if(pc[''])pr.push(h('div',{class:'fill'},h('span',{text:T('Vakta not chosen')}),h('b',{text:fr('')})));
    if(pr.length)rows.unshift(h('div',{style:'display:flex;flex-direction:column;gap:6px;margin-bottom:8px'},h('b',{text:T('Parayan sessions by Vakta')}),pr))}
-  if(k==='katha'){var kc={},kn=0;by.katha.forEach(function(e){var n=e.endDate?diff(e.date,e.endDate)+1:1;kc[e.vakta||'']=(kc[e.vakta||'']||0)+n;kn+=n});
-   var kr=Object.keys(kc).filter(function(id){return id&&id.charAt(0)!=='~'}).sort(function(x,y){return kc[y]-kc[x]}).map(function(id){return h('div',{class:'fill'},h('span',{text:sName(id)}),h('b',{text:dg(kc[id])+' '+T(kc[id]===1?'session':'sessions')}))});
-   if(kc[''])kr.push(h('div',{class:'fill'},h('span',{text:T('Vakta not chosen')}),h('b',{text:dg(kc[''])+' '+T(kc['']===1?'session':'sessions')})));
+  if(k==='katha'){var kc={},kd={},kn=0;by.katha.forEach(function(e){var n=e.endDate?diff(e.date,e.endDate)+1:1,v=e.vakta||'',t=today(),dn=0;for(var i=0;i<n;i++){var d=addDays(e.date,i);if(d<t||(d===t&&sessDone({date:t,end:e.end,start:e.start})))dn++}kc[v]=(kc[v]||0)+n;kd[v]=(kd[v]||0)+dn;kn+=n});
+   function kf(v){return dg(kd[v]||0)+'/'+dg(kc[v])}
+   var kr=Object.keys(kc).filter(function(id){return id&&id.charAt(0)!=='~'}).sort(function(x,y){return kc[y]-kc[x]}).map(function(id){return h('div',{class:'fill'},h('span',{text:sName(id)}),h('b',{text:kf(id)}))});
+   if(kc[''])kr.push(h('div',{class:'fill'},h('span',{text:T('Vakta not chosen')}),h('b',{text:kf('')})));
    if(kr.length)rows.unshift(h('div',{style:'display:flex;flex-direction:column;gap:6px;margin-bottom:8px'},h('b',{text:T('Katha sessions by Vakta')}),kr))}
-  if(k==='pravachan'){var vc={};by.pravachan.forEach(function(e){vc[e.vakta||'']=(vc[e.vakta||'']||0)+1});
-   var vr=Object.keys(vc).filter(function(id){return id&&id.charAt(0)!=='~'}).sort(function(x,y){return vc[y]-vc[x]}).map(function(id){return h('div',{class:'fill'},h('span',{text:sName(id)}),h('b',{text:dg(vc[id])+' '+T(vc[id]===1?'session':'sessions')}))});
+  if(k==='pravachan'){var vc={},vd={};by.pravachan.forEach(function(e){var v=e.vakta||'';vc[v]=(vc[v]||0)+1;if(sessDone(e))vd[v]=(vd[v]||0)+1});
+   var vr=Object.keys(vc).filter(function(id){return id&&id.charAt(0)!=='~'}).sort(function(x,y){return vc[y]-vc[x]}).map(function(id){return h('div',{class:'fill'},h('span',{text:sName(id)}),h('b',{text:dg(vd[id]||0)+'/'+dg(vc[id])}))});
    if(vr.length)rows.unshift(h('div',{style:'display:flex;flex-direction:column;gap:6px;margin-bottom:8px'},h('b',{text:lang==='gu'?'વક્તા પ્રમાણે પ્રવચન':'Pravachan by Vakta'}),vr))}
   root.append(h('div',{class:'card t-'+k,id:'sumDetail'},h('div',{class:'row',style:'justify-content:space-between'},h('h3',{text:typeLabel(k)+' ('+dg(count(k))+')'}),h('button',{class:'btn sm',type:'button','aria-label':lang==='gu'?'ઉપર':'Back up',onclick:function(){var t=document.getElementById('sumTiles');if(t)t.scrollIntoView({behavior:'smooth',block:'start'})}},'↑')),rows.length?rows:h('div',{class:'faint',text:T('Nothing noted yet.')})))}
  else root.append(h('p',{class:'note',text:T('Tap a box to see the list.')}));
