@@ -588,6 +588,8 @@ function selTours(){var ids=String(ui.tourSel||'').split(',').filter(Boolean),al
 function curTour(){var ts=selTours();if(!ts.length)ui.tourSel='';return ts.length===1?ts[0]:null}
 // An event belongs to the tour it was saved under; older events belong to the most specific (shortest) tour whose dates contain them.
 function ownerTour(e){var ts=state.tours||[];if(e.tour&&ts.some(function(t){return t.id===e.tour}))return e.tour;var best=null,bl=1e9;ts.forEach(function(t){if(t.start<=e.date&&e.date<=t.end){var l=diff(t.start,t.end);if(l<bl){bl=l;best=t}}});return best?best.id:''}
+// A session is finished once its end time (or start time, if no end) has passed.
+function sessDone(e){var t=today();if(e.date<t)return true;if(e.date>t)return false;var tm=e.end||e.start;if(!tm)return false;var n=new Date();return toMin(tm)<=n.getHours()*60+n.getMinutes()}
 function finEv(e){var id=ownerTour(e),t=id&&(state.tours||[]).find(function(x){return x.id===id});return !!t&&tourStatus(t)==='finished'}
 function dayAll(d){var ts=selTours();if(ts.length&&!ts.some(function(t){return t.start<=d&&d<=t.end}))return [];var ids={};ts.forEach(function(t){ids[t.id]=1});return state.events.filter(function(e){return e.date<=d&&d<=(e.endDate||e.date)&&(ts.length?!!ids[ownerTour(e)]:!finEv(e))})}
 // In the Summary a pravachan counts only for the vakta who gives it, not for every saint present.
@@ -1061,9 +1063,11 @@ function sumView(){
  if(ui.sumOpen){var k=ui.sumOpen,rows=[];
   if(k==='parayan')sers.forEach(function(o){rows.push(h('button',{class:'li',type:'button',onclick:function(){goDay(o.date)}},h('span',{class:'a',text:tr(o.title)+' · '+trPlace(o.place)}),h('span',{class:'b',text:dg(o.n)+' '+T('sessions')}),h('span',{class:'b',text:fmt(o.date)+' – '+fmt(o.end)}),h('span')))});
   else if(k!=='katha')by[k].forEach(function(e){rows.push(h('button',{class:'li',type:'button',onclick:function(){goDay(e.date)}},h('span',{class:'a',text:(evTitle(e)||(k==='other'?evTypeLabel(e):typeLabel(k)))+(((k==='katha'||k==='vastu')&&e.vakta)?' · '+sName(e.vakta):'')}),h('span',{class:'b',text:rangeLabel(e)}),h('span',{class:'b',text:trPlace(e.place)}),h('span')))});
-  if(k==='parayan'){var pc={};by.parayan.forEach(function(e){pc[e.vakta||'']=(pc[e.vakta||'']||0)+1});
-   var pr=Object.keys(pc).filter(function(id){return id&&id.charAt(0)!=='~'}).sort(function(x,y){return pc[y]-pc[x]}).map(function(id){return h('div',{class:'fill'},h('span',{text:sName(id)}),h('b',{text:dg(pc[id])+' '+T(pc[id]===1?'session':'sessions')}))});
-   if(pc[''])pr.push(h('div',{class:'fill'},h('span',{text:T('Vakta not chosen')}),h('b',{text:dg(pc[''])+' '+T(pc['']===1?'session':'sessions')})));
+  if(k==='parayan'){var pc={},pd={};by.parayan.forEach(function(e){var v=e.vakta||'';pc[v]=(pc[v]||0)+1;if(sessDone(e))pd[v]=(pd[v]||0)+1});
+   // finished sessions out of all of this vakta's sessions, e.g. 0/22 now, 1/22 once the first one is over
+   function fr(v){return dg(pd[v]||0)+'/'+dg(pc[v])}
+   var pr=Object.keys(pc).filter(function(id){return id&&id.charAt(0)!=='~'}).sort(function(x,y){return pc[y]-pc[x]}).map(function(id){return h('div',{class:'fill'},h('span',{text:sName(id)}),h('b',{text:fr(id)}))});
+   if(pc[''])pr.push(h('div',{class:'fill'},h('span',{text:T('Vakta not chosen')}),h('b',{text:fr('')})));
    if(pr.length)rows.unshift(h('div',{style:'display:flex;flex-direction:column;gap:6px;margin-bottom:8px'},h('b',{text:T('Parayan sessions by Vakta')}),pr))}
   if(k==='katha'){var kc={},kn=0;by.katha.forEach(function(e){var n=e.endDate?diff(e.date,e.endDate)+1:1;kc[e.vakta||'']=(kc[e.vakta||'']||0)+n;kn+=n});
    var kr=Object.keys(kc).filter(function(id){return id&&id.charAt(0)!=='~'}).sort(function(x,y){return kc[y]-kc[x]}).map(function(id){return h('div',{class:'fill'},h('span',{text:sName(id)}),h('b',{text:dg(kc[id])+' '+T(kc[id]===1?'session':'sessions')}))});
