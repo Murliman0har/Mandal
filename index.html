@@ -1045,7 +1045,8 @@ function inYatra(e){return e.date>=state.tripStart&&e.date<=state.tripEnd}
 function sumView(){
  var root=h('div',{style:'display:flex;flex-direction:column;gap:14px'}),by={};
  var tsS=selTours(),tour=tsS.length===1?tsS[0]:tsS.length>1?{id:'*',name:tsS.map(function(t){return t.name}).join(' + '),start:tsS.map(function(t){return t.start}).sort()[0],end:tsS.map(function(t){return t.end}).sort().reverse()[0],stays:[].concat.apply([],tsS.map(function(t){return t.stays||[]})),ids:tsS.reduce(function(o,t){o[t.id]=1;return o},{})}:null,scope=tour?'yatra':(ui.sumScope||'yatra'),isY=scope==='yatra',lo=tour?tour.start:state.tripStart,hi=tour?tour.end:state.tripEnd,stayList=tour?(tour.stays||[]):state.stays;
- var evs=state.events.filter(function(e){return e.type!=='rest'&&e.type!=='lunch'&&e.type!=='pothiyatra'&&(tour?(e.date>=lo&&e.date<=hi&&(tour.ids?!!tour.ids[ownerTour(e)]:ownerTour(e)===tour.id)):(inYatra(e)===isY&&!finEv(e)))&&hasSelSum(e)&&mandalVakta(e)});
+ var allT=tsS.length>0&&tsS.length>=(state.tours||[]).length;
+ var evs=state.events.filter(function(e){return e.type!=='rest'&&e.type!=='lunch'&&e.type!=='pothiyatra'&&(tour?((e.date>=lo&&e.date<=hi&&(tour.ids?!!tour.ids[ownerTour(e)]:ownerTour(e)===tour.id))||(allT&&!ownerTour(e))):(isY?(inYatra(e)||!ownerTour(e)):(!inYatra(e)&&!!ownerTour(e)))&&!finEv(e))&&hasSelSum(e)&&mandalVakta(e)});
  if(tour)root.append(h('h3',{style:'margin:0',text:tour.name}));
  else root.append(h('div',{class:'chips',role:'group','aria-label':'Summary of'},
   [['yatra',T('All tours')],['other',T('Other days')]].map(function(x){return h('button',{class:'chip',type:'button','aria-pressed':scope===x[0]?'true':'false',style:'padding:6px 14px',onclick:function(){ui.sumScope=x[0];ui.sumOpen='';render()}},x[1])})));
