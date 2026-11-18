@@ -499,6 +499,8 @@ body{
 .ev.now.t-pothiyatra .body{min-height:112px!important}
 .ev .aarti{z-index:8!important}
 .ev .rail .pill.now{margin-left:auto;background:#fff;color:color-mix(in srgb,var(--c) 65%,#000);animation:none;box-shadow:0 0 8px rgba(255,255,255,.8);align-self:center;padding:2px 10px}
+.ev.t-other:not([style*="--c"]) .rail{background:#fff;color:#3f2414;border-bottom:1px solid var(--line)}
+.ev.t-other:not([style*="--c"]) .rail .pill.now{background:#3f2414;color:#fff;box-shadow:none}
 .ev .rail .mtag{position:static!important;margin-left:auto;align-self:center}
 .ev .rail .mtag+.pill.now{margin-left:6px}
 :root{--c-outing:#86D391;--c-lunch:#F2C512;--c-rest:#0A0A0F}
@@ -1313,8 +1315,11 @@ function openForm(ev){
  function inp(id,type,val){return h('input',{type:type||'text',value:val||''})}
  // Colour choice for "Other" events: tap a swatch; the first (empty) one keeps the default grey.
  function colorField(){var cols=['','#E53935','#F57C00','#F9A825','#43A047','#00897B','#1E88E5','#3949AB','#8E24AA','#D81B60','#6D4C41'],hid=h('input',{type:'hidden',value:/^#[0-9a-fA-F]{6}$/.test(e.color||'')?e.color:''}),row=h('div',{class:'row',style:'gap:8px;flex-wrap:wrap;margin-top:4px'});
-  function paint(){[].slice.call(row.children).forEach(function(b){var on=b.getAttribute('data-c')===hid.value;b.style.outline=on?'3px solid var(--text,#fff)':'1px solid rgba(128,128,128,.5)';b.style.outlineOffset=on?'2px':'0';b.setAttribute('aria-pressed',on?'true':'false')})}
-  cols.forEach(function(c){var b=h('button',{type:'button','data-c':c,'aria-label':c||'Default colour',title:c||'Default colour',style:'width:30px;height:30px;border-radius:50%;border:0;padding:0;cursor:pointer;background:'+(c||'var(--c-other,#52525B)'),onclick:function(){hid.value=c;paint()}});if(!c)b.textContent='\u21BA',b.style.color='#fff',b.style.fontSize='14px';row.append(b)});
+  function paint(){[].slice.call(row.children).forEach(function(b){var c=b.getAttribute('data-c'),on=c===hid.value;b.style.outline='none';b.style.boxShadow=on?'0 0 0 2px #fff,0 0 0 4px #3f2414':'inset 0 0 0 1px rgba(0,0,0,.25)';b.style.position='relative';b.textContent='';
+   if(!c){var u=h('span',{style:'color:#3f2414;font-size:14px;line-height:1',text:'\u21BA'});b.append(u)}
+   if(on){var d=h('span',{style:'position:absolute;left:50%;top:50%;width:12px;height:12px;margin:-6px 0 0 -6px;border-radius:50%;box-sizing:border-box;background:'+(c?'#fff':'#3f2414')+';border:2px solid '+(c?'rgba(0,0,0,.35)':'#fff')});b.append(d)}
+   b.setAttribute('aria-pressed',on?'true':'false')})}
+  cols.forEach(function(c){var b=h('button',{type:'button','data-c':c,'aria-label':c||'Default colour',title:c||'Default colour',style:'width:30px;height:30px;border-radius:50%;border:0;padding:0;cursor:pointer;background:'+(c||'#fff'),onclick:function(){hid.value=c;paint()}});row.append(b)});
   var f=field('color',lang==='gu'?'રંગ':'Colour',hid,row);paint();return f}
  function vplus(k){return plusBtn(function(){addSaintInline(function(sa){['vakta','kvakta'].forEach(function(kk){var el=F[kk];if(el&&![].slice.call(el.options).some(function(o){return o.value===sa.id}))el.append(h('option',{value:sa.id,text:sa.name}))});F[k].value=sa.id},true,haveIn(F[k]))})}
  function sel(opts,val){var s=h('select',{});opts.forEach(function(o){var op=h('option',{value:o[0],text:o[1]});if(o[0]===val)op.selected=true;s.append(op)});return s}
