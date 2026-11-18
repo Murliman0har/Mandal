@@ -1484,19 +1484,24 @@ function openWhole(title,place){
 function openSeries(title,place){
  var list=seriesOf({title:title,place:place});if(!list.length)return;
  var modal=h('div',{class:'modal',role:'dialog','aria-modal':'true','aria-label':'Vakta and part of Shastra'}),rows=[];
- function vsel(val){var opts=[['','Not chosen']].concat(vaktaList(val,list[0].date).map(function(s){return[s.id,s.name]}));if(val&&val.charAt(0)==='~')opts.push([val,val.slice(1)]);var s=h('select',{});opts.forEach(function(o){var op=h('option',{value:o[0],text:o[1]});if(o[0]===val)op.selected=true;s.append(op)});return s}
+ function vsel(val){var opts=[['','Not chosen']].concat(vaktaList(val,list[0].date).map(function(s){return[s.id,s.name]}));if(val&&val.charAt(0)==='~')opts.push([val,val.slice(1)]);var s=h('select',{});opts.forEach(function(o){var op=h('option',{value:o[0],text:o[1]});if(o[0]===val)op.selected=true;s.append(op)});s.addEventListener('change',relabel);return s}
+ // Each vakta in the list shows, in a circle, how many sessions of this parayan are given to him so far (1 once, 2 twice, ...).
+ function circ(n){return n>0&&n<=20?String.fromCharCode(0x245F+n):'('+n+')'}
+ function relabel(){var sl=[all].concat(rows.map(function(r){return r.v})),c={};rows.forEach(function(r){if(r.v.value)c[r.v.value]=(c[r.v.value]||0)+1});
+  sl.forEach(function(se){[].slice.call(se.options).forEach(function(o){if(!o.value)return;if(o._n==null)o._n=o.text;o.text=o._n+(c[o.value]?'  '+circ(c[o.value]):'')})})}
  var all=vsel('');
- var allBtn=h('button',{class:'btn sm',type:'button',onclick:function(){if(!all.value)return;rows.forEach(function(r){r.v.value=all.value})}},'Apply to all');
+ var allBtn=h('button',{class:'btn sm',type:'button',onclick:function(){if(!all.value)return;rows.forEach(function(r){r.v.value=all.value});relabel()}},'Apply to all');
  var form=h('form',{class:'form',onsubmit:function(x){x.preventDefault();
   rows.forEach(function(r){var ev=state.events.find(function(y){return y.id===r.id});if(ev){ev.vakta=r.v.value;ev.portion=r.p.value.trim()}});
   ui.dirty++;modal.remove();render()}},
   h('h2',{text:tr(title)||'Parayan'}),
   h('p',{class:'note',style:'margin:0',text:(list[0].shastra?list[0].shastra+' \u00b7 ':'')+'Choose the Vakta and the part of the Shastra for each session.'}),
-  h('div',{class:'f'},h('label',{text:'Same Vakta for every session'}),h('div',{class:'row'},all,allBtn,plusBtn(function(){addSaintInline(function(sa){[all].concat(rows.map(function(r){return r.v})).forEach(function(sl){if(![].slice.call(sl.options).some(function(o){return o.value===sa.id}))sl.append(h('option',{value:sa.id,text:sa.name}))});all.value=sa.id},true,haveIn(all))}))),
+  h('div',{class:'f'},h('label',{text:'Same Vakta for every session'}),h('div',{class:'row'},all,allBtn,plusBtn(function(){addSaintInline(function(sa){[all].concat(rows.map(function(r){return r.v})).forEach(function(sl){if(![].slice.call(sl.options).some(function(o){return o.value===sa.id}))sl.append(h('option',{value:sa.id,text:sa.name}))});all.value=sa.id;relabel()},true,haveIn(all))}))),
   list.map(function(ev){
    var v=vsel(ev.vakta||''),p=h('input',{type:'text',value:ev.portion||'',placeholder:'Part of the Shastra'});rows.push({id:ev.id,v:v,p:p});
    return h('div',{class:'f',style:'border-top:1px solid var(--line);padding-top:10px'},h('label',{text:fmt(ev.date)+' \u00b7 '+(ev.session==='morning'?T('Morning'):ev.session==='evening'?T('Evening'):'')+(ev.start?' \u00b7 '+fmtTime(ev.start):'')}),v,p)}),
   h('div',{class:'row'},h('button',{class:'btn pri',type:'submit'},T('Done')),h('button',{class:'btn',type:'button',onclick:function(){modal.remove()}},T('Cancel'))));
+ relabel();
  modal.append(form);document.body.append(modal);backable(modal)}
 
 function shrinkSq(file,n){return new Promise(function(res,rej){var img=new Image(),u=URL.createObjectURL(file);img.onload=function(){var m=Math.min(img.width,img.height),c=document.createElement('canvas');c.width=c.height=n;c.getContext('2d').drawImage(img,(img.width-m)/2,(img.height-m)/2,m,m,0,0,n,n);URL.revokeObjectURL(u);c.toBlob(function(b){b?res(b):rej()},'image/jpeg',.85)};img.onerror=function(){URL.revokeObjectURL(u);rej()};img.src=u})}
