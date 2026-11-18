@@ -1077,6 +1077,9 @@ function sumView(){
   if(k==='pravachan'){var vc={},vd={};by.pravachan.forEach(function(e){var v=e.vakta||'';vc[v]=(vc[v]||0)+1;if(sessDone(e))vd[v]=(vd[v]||0)+1});
    var vr=Object.keys(vc).filter(function(id){return id&&id.charAt(0)!=='~'}).sort(function(x,y){return vc[y]-vc[x]}).map(function(id){return h('div',{class:'fill'},h('span',{text:sName(id)}),h('b',{text:dg(vd[id]||0)+'/'+dg(vc[id])}))});
    if(vr.length)rows.unshift(h('div',{style:'display:flex;flex-direction:column;gap:6px;margin-bottom:8px'},h('b',{text:lang==='gu'?'વક્તા પ્રમાણે પ્રવચન':'Pravachan by Vakta'}),vr))}
+  if(k!=='parayan'&&k!=='katha'&&k!=='pravachan'){var sc={},sd={},t0=today();by[k].forEach(function(e){var dn=e.endDate&&e.endDate>e.date?e.endDate<t0:sessDone(e);(e.saints||[]).forEach(function(id){if(!id||id.charAt(0)==='~')return;sc[id]=(sc[id]||0)+1;if(dn)sd[id]=(sd[id]||0)+1})});
+   var sr=Object.keys(sc).sort(function(x,y){return sc[y]-sc[x]}).map(function(id){return h('div',{class:'fill'},h('span',{text:sName(id)}),h('b',{text:dg(sd[id]||0)+'/'+dg(sc[id])}))});
+   if(sr.length)rows.unshift(h('div',{style:'display:flex;flex-direction:column;gap:6px;margin-bottom:8px'},h('b',{text:lang==='gu'?'સંત પ્રમાણે':'By Santo'}),sr))}
   root.append(h('div',{class:'card t-'+k,id:'sumDetail'},h('div',{class:'row',style:'justify-content:space-between'},h('h3',{text:typeLabel(k)+' ('+dg(count(k))+')'}),h('button',{class:'btn sm',type:'button','aria-label':lang==='gu'?'ઉપર':'Back up',onclick:function(){var t=document.getElementById('sumTiles');if(t)t.scrollIntoView({behavior:'smooth',block:'start'})}},'↑')),rows.length?rows:h('div',{class:'faint',text:T('Nothing noted yet.')})))}
  else root.append(h('p',{class:'note',text:T('Tap a box to see the list.')}));
  var noV=by.parayan.filter(function(e){return !e.vakta}).length,noS=by.parayan.filter(function(e){return !e.shastra}).length;
