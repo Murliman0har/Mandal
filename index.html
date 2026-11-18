@@ -1317,7 +1317,7 @@ function openForm(ev){
  function colorField(){var cols=['','#E53935','#F57C00','#F9A825','#43A047','#00897B','#1E88E5','#3949AB','#8E24AA','#D81B60','#6D4C41'],hid=h('input',{type:'hidden',value:/^#[0-9a-fA-F]{6}$/.test(e.color||'')?e.color:''}),row=h('div',{class:'row',style:'gap:8px;flex-wrap:wrap;margin-top:4px'});
   function paint(){[].slice.call(row.children).forEach(function(b){var c=b.getAttribute('data-c'),on=c===hid.value;b.style.outline='none';b.style.boxShadow=on?'0 0 0 2px #fff,0 0 0 4px #3f2414':'inset 0 0 0 1px rgba(0,0,0,.25)';b.style.position='relative';b.textContent='';
    if(!c){var u=h('span',{style:'color:#fff;font-size:14px;line-height:1',text:'\u21BA'});b.append(u)}
-   if(on){var d=h('span',{style:'position:absolute;left:50%;top:50%;width:12px;height:12px;margin:-6px 0 0 -6px;border-radius:50%;box-sizing:border-box;background:#fff;border:2px solid rgba(0,0,0,.35)});b.append(d)}
+   if(on){var d=h('span',{style:'position:absolute;left:50%;top:50%;width:12px;height:12px;margin:-6px 0 0 -6px;border-radius:50%;box-sizing:border-box;background:#fff;border:2px solid rgba(0,0,0,.35)'});b.append(d)}
    b.setAttribute('aria-pressed',on?'true':'false')})}
   cols.forEach(function(c){var b=h('button',{type:'button','data-c':c,'aria-label':c||'Default colour',title:c||'Default colour',style:'width:30px;height:30px;border-radius:50%;border:0;padding:0;cursor:pointer;background:'+(c||'#2F6F6B'),onclick:function(){hid.value=c;paint()}});row.append(b)});
   var f=field('color',lang==='gu'?'રંગ':'Colour',hid,row);paint();return f}
