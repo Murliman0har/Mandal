@@ -1489,19 +1489,38 @@ function openSeries(title,place){
  function circ(n){return n>0&&n<=20?String.fromCharCode(0x245F+n):'('+n+')'}
  function relabel(){var sl=[all].concat(rows.map(function(r){return r.v})),c={};rows.forEach(function(r){if(r.v.value)c[r.v.value]=(c[r.v.value]||0)+1});
   sl.forEach(function(se){[].slice.call(se.options).forEach(function(o){if(!o.value)return;if(o._n==null)o._n=o.text;o.text=o._n+(c[o.value]?'  '+circ(c[o.value]):'')})})}
+ // Part of the Shastra = a name (same for every session unless edited) + a number range where each session starts after the previous one ends.
+ function nv(x){var n=parseInt(String(x.value).trim(),10);return isNaN(n)?null:n}
+ function partOf(ev){if(ev.pb!=null)return{a:ev.pname||'',s:ev.pa!=null?String(ev.pa):'',e:String(ev.pb)};
+  var t=(ev.portion||'').trim(),m=t.match(/^(.*?)\s*(\d+)\s*[-\u2013]\s*(\d+)$/);if(m)return{a:m[1].trim(),s:m[2],e:m[3]};
+  m=t.match(/^(.*?)\s*(\d+)$/);if(m)return{a:m[1].trim(),s:m[2],e:m[2]};return{a:t,s:'',e:''}}
+ function recalc(init){var cur=null;rows.forEach(function(r,i){
+   if(init&&r.ps!==''){r.s.value=r.ps;r.sManual=i===0||String(r.ps)!==String(cur==null?'':cur)}
+   else if(i===0){if(!r.sManual&&r.s.value.trim()==='')r.s.value='1'}
+   else if(!r.sManual)r.s.value=cur==null?'':String(cur);
+   var st=nv(r.s),en=nv(r.e);cur=(st!=null&&en!=null&&en>=st)?en+1:null})}
+ function startAlpha(){rows.forEach(function(r,i){if(i>0&&r.a.value.trim()!==''&&r.a.value.trim()!==rows[0].a.value.trim())r.aManual=true})}
+
  var all=vsel('');
  var allBtn=h('button',{class:'btn sm',type:'button',onclick:function(){if(!all.value)return;rows.forEach(function(r){r.v.value=all.value});relabel()}},'Apply to all');
  var form=h('form',{class:'form',onsubmit:function(x){x.preventDefault();
-  rows.forEach(function(r){var ev=state.events.find(function(y){return y.id===r.id});if(ev){ev.vakta=r.v.value;ev.portion=r.p.value.trim()}});
+  rows.forEach(function(r){var ev=state.events.find(function(y){return y.id===r.id});if(ev){ev.vakta=r.v.value;var a=r.a.value.trim(),st=nv(r.s),en=nv(r.e),num=(st!=null&&en!=null)?(en>st?st+'-'+en:String(en)):(en!=null?String(en):'');ev.portion=(a+' '+num).trim();ev.pname=a;if(st!=null)ev.pa=st;else delete ev.pa;if(en!=null)ev.pb=en;else delete ev.pb}});
   ui.dirty++;modal.remove();render()}},
   h('h2',{text:tr(title)||'Parayan'}),
-  h('p',{class:'note',style:'margin:0',text:(list[0].shastra?list[0].shastra+' \u00b7 ':'')+'Choose the Vakta and the part of the Shastra for each session.'}),
+  h('p',{class:'note',style:'margin:0',text:(list[0].shastra?list[0].shastra+' \u00b7 ':'')+'Choose the Vakta for each session. For the part of the Shastra, type only the last number; the next session starts after it.'}),
   h('div',{class:'f'},h('label',{text:'Same Vakta for every session'}),h('div',{class:'row'},all,allBtn,plusBtn(function(){addSaintInline(function(sa){[all].concat(rows.map(function(r){return r.v})).forEach(function(sl){if(![].slice.call(sl.options).some(function(o){return o.value===sa.id}))sl.append(h('option',{value:sa.id,text:sa.name}))});all.value=sa.id;relabel()},true,haveIn(all))}))),
   list.map(function(ev){
-   var v=vsel(ev.vakta||''),p=h('input',{type:'text',value:ev.portion||'',placeholder:'Part of the Shastra'});rows.push({id:ev.id,v:v,p:p});
-   return h('div',{class:'f',style:'border-top:1px solid var(--line);padding-top:10px'},h('label',{text:fmt(ev.date)+' \u00b7 '+(ev.session==='morning'?T('Morning'):ev.session==='evening'?T('Evening'):'')+(ev.start?' \u00b7 '+fmtTime(ev.start):'')}),v,p)}),
+   var v=vsel(ev.vakta||''),pp=partOf(ev),ns={type:'text',inputmode:'numeric',style:'width:60px;flex:none;text-align:center'},
+    r={id:ev.id,v:v,ps:pp.s,aManual:false,sManual:false};
+   r.s=h('input',Object.assign({placeholder:'from',value:''},ns));r.e=h('input',Object.assign({placeholder:'to',value:pp.e},ns));
+   r.a=h('input',{type:'text',value:pp.a,placeholder:'Part name',style:'flex:1;min-width:0'});
+   rows.push(r);var idx=rows.length-1;
+   r.s.addEventListener('input',function(){r.sManual=r.s.value.trim()!=='';recalc()});
+   r.e.addEventListener('input',function(){recalc()});
+   r.a.addEventListener('input',function(){if(idx===0){rows.slice(1).forEach(function(x){if(!x.aManual)x.a.value=r.a.value})}else{r.aManual=r.a.value.trim()!=='';if(!r.aManual)r.a.value=rows[0].a.value}});
+   return h('div',{class:'f',style:'border-top:1px solid var(--line);padding-top:10px'},h('label',{text:fmt(ev.date)+' \u00b7 '+(ev.session==='morning'?T('Morning'):ev.session==='evening'?T('Evening'):'')+(ev.start?' \u00b7 '+fmtTime(ev.start):'')}),v,h('div',{class:'row',style:'gap:6px;align-items:center;flex-wrap:nowrap'},r.s,h('span',{text:'\u2013'}),r.e,r.a))}),
   h('div',{class:'row'},h('button',{class:'btn pri',type:'submit'},T('Done')),h('button',{class:'btn',type:'button',onclick:function(){modal.remove()}},T('Cancel'))));
- relabel();
+ relabel();recalc(true);startAlpha();
  modal.append(form);document.body.append(modal);backable(modal)}
 
 function shrinkSq(file,n){return new Promise(function(res,rej){var img=new Image(),u=URL.createObjectURL(file);img.onload=function(){var m=Math.min(img.width,img.height),c=document.createElement('canvas');c.width=c.height=n;c.getContext('2d').drawImage(img,(img.width-m)/2,(img.height-m)/2,m,m,0,0,n,n);URL.revokeObjectURL(u);c.toBlob(function(b){b?res(b):rej()},'image/jpeg',.85)};img.onerror=function(){URL.revokeObjectURL(u);rej()};img.src=u})}
