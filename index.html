@@ -811,8 +811,7 @@ function dayView(){
  var pr=(function(){var ts=curTour(),a=ts?ts.start:state.tripStart,z=ts?ts.end:state.tripEnd;if(!a||!z||d<a||d>z||(!ts&&!st))return null;var n=diff(a,z)+1,k=diff(a,d)+1;return {k:k,n:n,left:n-k,pct:Math.round(k/n*100)}})();
  // "Today" only appears on today; on any other day, tapping the day line jumps back to today
  root.append(h('div',{class:'nav',style:'justify-content:center'},
-  isToday?h('span',{class:'btn',style:'pointer-events:none;font-weight:700',text:T('Today')}):null,
-  isToday?h('span',{class:'sub',text:dayTxt}):h('button',{class:'btn',type:'button',style:'font-weight:700',title:lang==='gu'?'આજે જવા ટૅપ કરો':'Tap to go to today',text:dayTxt||(lang==='gu'?'આજે':'Today'),onclick:goToday})));
+  isToday?h('span',{class:'btn',style:'pointer-events:none;font-weight:700',text:T('Today')+(dayTxt?' \u00b7 '+dayTxt:'')}):h('button',{class:'btn',type:'button',style:'font-weight:700',title:lang==='gu'?'આજે જવા ટૅપ કરો':'Tap to go to today',text:dayTxt||(lang==='gu'?'આજે':'Today'),onclick:goToday})));
  if(pr){var gu0=lang==='gu';root.append(h('div',{},h('div',{class:'pbar',role:'progressbar','aria-valuemin':'0','aria-valuemax':'100','aria-valuenow':String(pr.pct)},h('i',{style:'width:'+(pr.k/pr.n*100)+'%'})),
   h('div',{class:'ptxt'},h('span',{text:dg(pr.pct)+'%'}),h('span',{text:pr.left>0?dg(pr.left)+(gu0?' દિવસ બાકી':(pr.left===1?' day left':' days left')):(gu0?'યાત્રા પૂર્ણ \u{1F64F}':'Trip complete \u{1F64F}')}))))}
  var tsel=curTour();
