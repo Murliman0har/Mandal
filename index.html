@@ -806,7 +806,7 @@ function dayView(){
   // nothing running: go to the next event still to start today (or the top if none is left)
   if(!n){var nw=new Date(),nm=nw.getHours()*60+nw.getMinutes();[].slice.call(document.querySelectorAll('.ev[data-eid]')).some(function(el){var ev=state.events.find(function(x){return x.id===el.getAttribute('data-eid')});var q=ev&&toMin(dt(ev).start);if(q!=null&&q>nm){n=el;return true}return false})}
   if(n)n.scrollIntoView({behavior:'smooth',block:'center'});else window.scrollTo({top:0,behavior:'smooth'})},120)};
- var dayTxt=(function(){var ts=curTour();if(ts)var dl=function(k){return (lang==='gu'?'દિવસ ':'Day ')+dg(k)};if(ts)return(d>=ts.start&&d<=ts.end)?ts.name+' \u00b7 '+dl(diff(ts.start,d)+1):'';return st?dl(diff(state.tripStart,d)+1):''})();
+ var dayTxt=(function(){var ts=curTour(),dl=function(k){return (lang==='gu'?'દિવસ ':'Day ')+dg(k)};if(ts)if(ts)return(d>=ts.start&&d<=ts.end)?ts.name+' \u00b7 '+dl(diff(ts.start,d)+1):'';return st?dl(diff(state.tripStart,d)+1):''})();
  var isToday=d===today();
  var pr=(function(){var ts=curTour(),a=ts?ts.start:state.tripStart,z=ts?ts.end:state.tripEnd;if(!a||!z||d<a||d>z||(!ts&&!st))return null;var n=diff(a,z)+1,k=diff(a,d)+1;return {k:k,n:n,left:n-k,pct:Math.round(k/n*100)}})();
  // "Today" only appears on today; on any other day, tapping the day line jumps back to today
