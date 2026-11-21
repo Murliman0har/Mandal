@@ -797,7 +797,10 @@ function dayView(){
   h('button',{class:'btn',type:'button',onclick:function(){ui.date=calClamp(addDays(d,-1));render()},'aria-label':'Previous day'},'‹'),
   h('div',{class:'date',style:'position:relative;cursor:pointer',title:'Pick a date'},fmt(d,{weekday:'long',day:'numeric',month:'long',year:'numeric'}),inp),
   h('button',{class:'btn',type:'button',onclick:function(){ui.date=calClamp(addDays(d,1));render()},'aria-label':'Next day'},'›')));
- var goToday=function(){ui.date=calClamp(today());render();setTimeout(function(){var n=document.querySelector('.ev.now');if(n)n.scrollIntoView({behavior:'smooth',block:'center'});else window.scrollTo({top:0,behavior:'smooth'})},120)};
+ var goToday=function(){ui.date=calClamp(today());render();setTimeout(function(){var n=document.querySelector('.ev.now');
+  // nothing running: go to the next event still to start today (or the top if none is left)
+  if(!n){var nw=new Date(),nm=nw.getHours()*60+nw.getMinutes();[].slice.call(document.querySelectorAll('.ev[data-eid]')).some(function(el){var ev=state.events.find(function(x){return x.id===el.getAttribute('data-eid')});var q=ev&&toMin(dt(ev).start);if(q!=null&&q>nm){n=el;return true}return false})}
+  if(n)n.scrollIntoView({behavior:'smooth',block:'center'});else window.scrollTo({top:0,behavior:'smooth'})},120)};
  var dayTxt=(function(){var ts=curTour();if(ts)return(d>=ts.start&&d<=ts.end)?dayOf(diff(ts.start,d)+1,diff(ts.start,ts.end)+1):'';return st?dayOf(diff(state.tripStart,d)+1,diff(state.tripStart,state.tripEnd)+1):''})();
  var isToday=d===today();
  // "Today" only appears on today; on any other day, tapping the day line jumps back to today
