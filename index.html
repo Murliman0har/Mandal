@@ -264,6 +264,18 @@ body{
    var(--bg);
 }
 .wrap{padding-top:14px}
+.vsh{align-items:flex-end;padding:0}
+.vsh .form{width:100%;max-width:560px;margin:0 auto;border-radius:22px 22px 0 0;max-height:86vh;overflow:auto;padding-bottom:22px}
+.vsh .chips{display:flex;gap:6px;flex-wrap:wrap}
+.vr{display:grid;grid-template-columns:54px minmax(0,1fr) auto;gap:10px;align-items:center;width:100%;text-align:left;font:inherit;color:inherit;border:1px solid var(--line,#ecd9b0);border-radius:14px;background:var(--surface,#fff);padding:9px 11px;margin:0 0 8px;cursor:pointer}
+.vr.me{border:2px solid #c8661b;background:rgba(232,163,61,.14)}
+.vr.now{box-shadow:0 0 0 3px rgba(232,163,61,.4)}
+.vr .vd{text-align:center;line-height:1.1}.vr .vd b{font-size:20px;display:block}.vr .vd span{font-size:10.5px;opacity:.75;text-transform:uppercase}
+.vr .vn{font-weight:700;font-size:14.5px;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.vr .vc{display:inline-flex;align-items:center;justify-content:center;min-width:20px;height:20px;padding:0 5px;box-sizing:border-box;border-radius:99px;background:#c8661b;color:#fff;font-size:11px;font-weight:700}
+.vr .vp{font-size:12.5px;opacity:.85;margin-top:2px}.vr .vp b{font-weight:800}
+.vr .vs{font-size:11.5px;font-weight:700;padding:3px 9px;border-radius:99px;background:rgba(128,128,128,.18);white-space:nowrap}
+.vr .vs.done{background:#e3f1dc;color:#2f6b25}.vr .vs.nw{background:#ffe2a8;color:#7a4a00}
 .pbar{margin:10px 6px 0;height:9px;border-radius:9px;background:#f0dfbd;overflow:hidden}
 .pbar i{display:block;height:100%;border-radius:9px;background:linear-gradient(90deg,#e8a33d,#c8661b);transition:width .4s ease}
 .ptxt{display:flex;justify-content:space-between;font-size:11px;color:#8a6b45;margin:4px 6px 0}
@@ -705,7 +717,7 @@ function evCard(e,isNow,isNext){
  if(e.type==='parayan'){
   if(e.shastra)kv.push(h('dt',{text:T('Shastra')}),h('dd',{style:'font-weight:700',text:e.shastra}));
   if(e.vakta){var sv=seriesOf(e).filter(function(x){return x.vakta===e.vakta}),ix=sv.findIndex(function(x){return x.id===e.id})+1;
-   kv.push(h('dt',{text:T('Vakta')}),h('dd',{},sName(e.vakta)+' ',ix>0?h('span',{style:'display:inline-flex;align-items:center;justify-content:center;min-width:24px;height:22px;padding:0 7px;box-sizing:border-box;border-radius:11px;font-size:12px;font-weight:600;background:var(--bg-accent,#E6F1FB);color:var(--text-accent,#185FA5);vertical-align:1px',text:ix+'/'+sv.length}):null))}
+   kv.push(h('dt',{text:T('Vakta')}),h('dd',{},sName(e.vakta)+' ',ix>0?h('button',{type:'button','aria-label':'Vakta and part of every session',onclick:function(){showVaktaList(e)},style:'border:0;font-family:inherit;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;min-width:24px;height:22px;padding:0 7px;box-sizing:border-box;border-radius:11px;font-size:12px;font-weight:600;background:var(--bg-accent,#E6F1FB);color:var(--text-accent,#185FA5);vertical-align:1px',text:ix+'/'+sv.length}):null))}
   add('Portion',e.portion)}
  if(e.type==='katha'||e.type==='vastu'||e.type==='pravachan')add('Vakta',sName(e.vakta));
  
@@ -1530,6 +1542,28 @@ function openWhole(title,place){
   h('div',{class:'row'},h('button',{class:'btn pri',type:'submit'},T('Done')),h('button',{class:'btn',type:'button',onclick:function(){modal.remove()}},T('Cancel')),
    h('button',{class:'btn',type:'button',onclick:function(){modal.remove();openSeries(title,place)}},'Vakta & part')));
  modal.append(form);document.body.append(modal);backable(modal);F.title.focus()}
+// Read-only list of every session of a parayan (date, vakta with his running count, part of the shastra, status).
+function showVaktaList(e){
+ if(document.querySelector('.modal.vsh'))return;
+ var gu=lang==='gu',list=seriesOf(e),cnt={},num={},pick=e.vakta||'',t0=today(),nm=new Date().getHours()*60+new Date().getMinutes();
+ list.forEach(function(x){var v=x.vakta||'';cnt[v]=(cnt[v]||0)+1;num[x.id]=cnt[v]});
+ var modal=h('div',{class:'modal vsh',role:'dialog','aria-modal':'true','aria-label':gu?'વક્તા અને શાસ્ત્રનો ભાગ':'Vakta and part of Shastra',onclick:function(ev){if(ev.target===modal)modal.remove()}});
+ var body=h('div',{});
+ var days={};list.forEach(function(x){days[x.date]=1});
+ var filt='';
+ function status(x){if(sessDone(x))return['done','\u2713 '+(gu?'પૂર્ણ':'Done')];var q=dt(x),a=toMin(q.start),z=q.end?toMin(q.end):(a==null?null:a+90);if(x.date===t0&&a!=null&&a<=nm&&nm<z)return['nw','\u25CF '+(gu?'હમણાં':'Now')];return['',gu?'આગામી':'Upcoming']}
+ function draw(){body.textContent='';
+  var vs=[];list.forEach(function(x){var v=x.vakta||'';if(v&&v.charAt(0)!=='~'&&vs.indexOf(v)<0)vs.push(v)});
+  body.append(h('div',{class:'chips',role:'group',style:'margin:0 0 10px'},[h('button',{class:'chip',type:'button','aria-pressed':filt===''?'true':'false',style:'padding:4px 11px',onclick:function(){filt='';draw()}},gu?'બધા':'All')].concat(vs.map(function(v){return h('button',{class:'chip',type:'button','aria-pressed':filt===v?'true':'false',style:'padding:4px 11px',onclick:function(){filt=filt===v?'':v;draw()}},sName(v))}))));
+  list.filter(function(x){return !filt||x.vakta===filt}).forEach(function(x){
+   var pp=partParse(x),part=(pp.a||'')+(pp.s?' ':'')+(pp.s?(pp.e&&pp.e!==pp.s?dg(pp.s)+' \u2013 '+dg(pp.e):dg(pp.s)):'')||(x.portion||''),st=status(x),hl=(filt||pick)&&x.vakta===(filt||pick),dd=parse(x.date),wd=fmt(x.date,{weekday:'short'}),ses=x.session==='evening'?(gu?'સાંજ':'PM'):(gu?'સવાર':'AM');
+   body.append(h('button',{class:'vr'+(hl?' me':'')+(st[0]==='nw'?' now':''),type:'button',onclick:function(){modal.remove();goDay(x.date)}},
+    h('div',{class:'vd'},h('b',{text:dg(+x.date.slice(8))}),h('span',{text:wd+' \u00b7 '+ses})),
+    h('div',{},h('div',{class:'vn'},h('span',{text:x.vakta?sName(x.vakta):(gu?'વક્તા પસંદ નથી':'Vakta not chosen')}),x.vakta?h('i',{class:'vc',text:dg(num[x.id])}):null),part?h('div',{class:'vp'},gu?'ભાગ: ':'Part: ',h('b',{text:part})):null),
+    h('span',{class:'vs '+st[0],text:st[1]})))})}
+ var form=h('div',{class:'form'},h('div',{class:'row',style:'justify-content:space-between;align-items:center;flex-wrap:nowrap'},h('h2',{style:'margin:0',text:(tr(e.title)||'Parayan')+(e.place?' \u00b7 '+trPlace(e.place):'')}),h('button',{class:'btn sm',type:'button','aria-label':'Close',onclick:function(){modal.remove()}},'\u00d7')),
+  h('p',{class:'note',style:'margin:0',text:dg(Object.keys(days).length)+(gu?' દિવસ \u00b7 ':' days \u00b7 ')+dg(list.length)+(gu?' સત્રો \u00b7 દિવસ ખોલવા ટૅપ કરો':' sessions \u00b7 tap a row to open that day')}),body);
+ draw();modal.append(form);document.body.append(modal);backable(modal)}
 function openSeries(title,place){
  var list=seriesOf({title:title,place:place});if(!list.length)return;
  var modal=h('div',{class:'modal',role:'dialog','aria-modal':'true','aria-label':'Vakta and part of Shastra'}),rows=[];
