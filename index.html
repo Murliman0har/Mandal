@@ -1159,9 +1159,16 @@ function weatherEl(){
 var tithiL=null,tithiI={},tithiBusy={};ui.tithiOpen='';
 function loadTithi(){if(tithiL)return;fetch('tithi-l.json').then(function(r){return r.ok?r.json():null}).then(function(j){tithiL=j||{};render()}).catch(function(){tithiL={}})}
 function loadYear(y){if(tithiI[y]||tithiBusy[y])return;tithiBusy[y]=1;fetch('tithi-i-'+y+'.json').then(function(r){return r.ok?r.json():{}}).then(function(j){tithiI[y]=j||{};render()}).catch(function(){delete tithiBusy[y]})}
+var BHUJ=null;
+var BM={KA:['કારતક','Kartik'],MG:['માગશર','Magshar'],PO:['પોષ','Posh'],MA:['મહા','Maha'],FA:['ફાગણ','Fagan'],CH:['ચૈત્ર','Chaitra'],VA:['વૈશાખ','Vaishakh'],JE:['જેઠ','Jeth'],AS:['અષાઢ','Ashadh']};
+function loadBhuj(){if(BHUJ)return;BHUJ={};fetch('bhuj-tithi.json').then(function(r){return r.ok?r.json():{}}).then(function(j){BHUJ=j||{};render()}).catch(function(){})}
+// Gujarati date from the Bhuj Mandir calendar, e.g. "Samvat 2083 · Kartik Sud 5"
+function bhujDate(d){var x=BHUJ&&BHUJ[d];if(!x)return '';var gu=lang==='gu',m=BM[x[0]],p=x[1]==='s'?(gu?'સુદ':'Sud'):(gu?'વદ':'Vad');
+ return (gu?'સંવત ':'Samvat ')+dg(2083)+' · '+(gu?m[0]:m[1])+' '+p+'-'+x[2].split('/').map(dg).join('/')}
 function tithiEl(){
  var box=h('div',{class:'tithi'}),y=ui.date.slice(0,4);
- loadYear(y);if(!tithiL)loadTithi();
+ loadYear(y);if(!tithiL)loadTithi();loadBhuj();
+ var bd=bhujDate(ui.date);if(bd)box.append(h('div',{style:'font-weight:700;font-size:15px',text:'\u{1F4C5} '+bd}));
  var l=(tithiL&&tithiL[ui.date])||[],i=(tithiI[y]&&tithiI[y][ui.date])||[];
  var nk=function(x){return x[0].toLowerCase().replace(/[^a-z0-9]/g,'')},ik={},lk={};
  i.forEach(function(x){ik[nk(x)]=1});l.forEach(function(x){lk[nk(x)]=1});
