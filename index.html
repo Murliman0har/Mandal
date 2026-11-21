@@ -1191,7 +1191,7 @@ var BM={KA:['કારતક','Kartik'],MG:['માગશર','Magshar'],PO:['�
 function loadBhuj(){if(BHUJ)return;BHUJ={};fetch('bhuj-tithi.json').then(function(r){return r.ok?r.json():{}}).then(function(j){BHUJ=j||{};render()}).catch(function(){})}
 // Gujarati date from the Bhuj Mandir calendar, e.g. "Samvat 2083 · Kartik Sud 5"
 function bhujDate(d){var x=BHUJ&&BHUJ[d];if(!x)return '';var gu=lang==='gu',m=BM[x[0]],p=x[1]==='s'?(gu?'સુદ':'Sud'):(gu?'વદ':'Vad');
- return (gu?'સંવત ':'Samvat ')+dg(2083)+' · '+(gu?m[0]:m[1])+' '+p+'-'+x[2].split('/').map(dg).join('/')}
+ return dg(2083)+' · '+(gu?m[0]:m[1])+' '+p+'-'+x[2].split('/').map(dg).join('/')}
 function tithiEl(){
  var box=h('div',{class:'tithi'}),y=ui.date.slice(0,4);
  loadYear(y);if(!tithiL)loadTithi();loadBhuj();
