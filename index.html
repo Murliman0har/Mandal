@@ -880,7 +880,7 @@ function dayView(){
   shiftFrom=(st&&prev&&prev.end===d&&st.start===d&&nrm(prev.place)!==nrm(st.place))?prev:null;
   var prCard=function(r){var bits=[];if(r.place)bits.push(trPlace(r.place));if(r.yajman)bits.push(T('Yajman')+': '+r.yajman);
     return h('div',{style:'margin-top:6px;display:flex;flex-direction:column;gap:2px'},
-     h('span',{class:'patl',text:'\u{1FA94} '+(evTitle(r)||typeLabel('parayan'))+(r.n>1?' \u00b7 '+(lang==='gu'?dayOf(r.k,r.n):'Day '+r.k+' of '+r.n):'')}),
+     h('span',{class:'patl',text:'\u{1FA94} '+(evTitle(r)||typeLabel('parayan'))+(r.n>1&&!(visT().find(function(x){return x.id===ownerTour(r)})||{}).private?' \u00b7 '+(lang==='gu'?dayOf(r.k,r.n):'Day '+r.k+' of '+r.n):'')}),
      r.shastra?h('span',{style:'font-weight:700;font-size:1.15em;line-height:1.3',text:r.shastra}):null,
      bits.length?h('span',{class:'meta',text:bits.join(' \u00b7 ')}):null,
      (ui.canEdit&&!scoped()&&canEditDate(r.date||ui.date)&&canEditSer(r))?h('div',{class:'row'},h('button',{class:'btn sm',type:'button',onclick:function(){openWhole(r.title,r.place)}},lang==='gu'?'આખું પારાયણ સુધારો':(r.n>1?'Edit Parayan (Day 1 to '+r.n+')':'Edit Parayan'))):null)},prsFrom=shiftFrom?prs.filter(function(r){return r.place?nrm(r.place)===nrm(shiftFrom.place):(r.f<d&&r.f>=shiftFrom.start)}):[],prsTo=shiftFrom?prs.filter(function(r){return prsFrom.indexOf(r)<0}):prs;
