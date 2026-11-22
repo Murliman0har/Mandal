@@ -586,8 +586,8 @@ function avFor(s,id,extra){if(!s&&id&&id.charAt(0)==='~'){var tn=id.slice(1);ret
  if(s&&s.photo){var im=pimg(s.photo,{alt:'',style:'position:absolute;inset:0;width:100%;height:100%;object-fit:cover'});im.addEventListener('error',function(){im.remove()});sp.append(im)}
  return sp}
 // The tours being viewed: the ones tapped in the sidebar, else all. Stays from tours you are not viewing never show.
-// A tour marked private (e.g. a gurukul) exists only for its own saints and the admin; everyone else never sees it.
-function tourVisible(t){return !t.private||!!ui.admin||(t.saints||[]).indexOf(ME)>-1}
+// A tour marked private (e.g. a gurukul) is permanent: visible to everyone, no day count or progress bar; its notifications and default selection are only for its own saints.
+function tourVisible(t){return true}
 function visT(){return (state.tours||[]).filter(tourVisible)}
 function viewTours(){var ts=selTours();return ts.length?ts:visT()}
 function viewStays(){var all=[];viewTours().forEach(function(t){(t.stays||[]).forEach(function(x){all.push(x)})});return all.sort(function(a,b){return a.start<b.start?-1:a.start>b.start?1:0})}
@@ -603,7 +603,7 @@ function tourGroups(list){var g={ongoing:[],upcoming:[],finished:[]};list.slice(
 function autoTour(){var ts=visT(),cur=ts.find(function(x){return x.id===ui.tourSel}),chosen='';if(String(ui.tourSel||'').indexOf(',')>-1)return;try{chosen=localStorage.getItem('tourSelSet')||''}catch(x){}
  if(cur&&tourStatus(cur)!=='finished')return;if(cur&&chosen&&ui.tourSel)return;
  if(!cur&&chosen&&!ui.tourSel)return;
- var pick=ts.filter(function(t){return t.private&&(t.saints||[]).indexOf(ME)>-1&&tourStatus(t)==='ongoing'})[0]||ts.filter(function(t){return tourStatus(t)==='ongoing'})[0]||ts.filter(function(t){return tourStatus(t)==='upcoming'}).sort(function(a,b){return a.start<b.start?-1:1})[0];
+ var pick=ts.filter(function(t){return t.private&&(t.saints||[]).indexOf(ME)>-1&&tourStatus(t)==='ongoing'})[0]||ts.filter(function(t){return !t.private&&tourStatus(t)==='ongoing'})[0]||ts.filter(function(t){return !t.private&&tourStatus(t)==='upcoming'}).sort(function(a,b){return a.start<b.start?-1:1})[0];
  if(pick){ui.tourSel=pick.id;if(ui.date<pick.start||ui.date>pick.end)ui.date=pick.start<today()&&today()<=pick.end?today():pick.start}}
 function selIdsHas(id){return String(ui.tourSel||'').split(',').indexOf(id)>-1}
 function selTours(){var ids=String(ui.tourSel||'').split(',').filter(Boolean),all=visT();return ids.map(function(id){return all.find(function(x){return x.id===id})}).filter(Boolean)}
@@ -851,7 +851,7 @@ function dayView(){
   if(st){var n=diff(st.start,st.end)+1,k=diff(st.start,d)+1,tr0=visT().find(function(x){return (x.stays||[]).indexOf(st)>-1});
    if(tr0){var prior=0,tot=0;tr0.stays.forEach(function(x){if(nrm(x.place)!==nrm(st.place))return;var dn=diff(x.start,x.end)+1;tot+=dn;if(x!==st&&x.end<st.start)prior+=dn});if(tot>n){k+=prior;n=tot}}
    var vs=viewStays(),idx=vs.indexOf(st),prev=vs[idx-1],gu=lang==='gu';
-   meta=[trPlace(st.region)];if(st.start!==st.end)meta.push(gu?'અહીં '+dayOf(k,n):'Day '+k+' of '+n+' here');
+   meta=[trPlace(st.region)];if(st.start!==st.end&&!(tr0&&tr0.private))meta.push(gu?'અહીં '+dayOf(k,n):'Day '+k+' of '+n+' here');
    if(d===st.start&&prev&&prev.place!==st.place)meta.push(gu?trPlace(prev.place)+' થી આગમન':'Arriving from '+prev.place);
    var nx=vs[idx+1];if(d===st.end&&nx)meta.push(gu?'આજે '+trPlace(nx.place)+' તરફ પ્રસ્થાન':'Moving to '+nx.place+' today')}
   // Shift day: one stay ends and the next begins the same day, so the card shows both mandirs.
@@ -866,7 +866,7 @@ function dayView(){
   var shEv=shiftFrom?evs.find(function(e){return e.type==='car'&&toMin(dt(e).start)!=null}):null,shMin=shEv?toMin(dt(shEv).start):null,nowM=new Date().getHours()*60+new Date().getMinutes(),
    shMode=(shiftFrom&&shMin!=null&&d===today())?(nowM>=shMin?'to':'from'):'both';
   if(shMode==='from')meta=[trPlace(shiftFrom.region),gu?'આજે '+trPlace(st.place)+' તરફ પ્રસ્થાન':'Moving to '+st.place+' today'].filter(Boolean);
-  root.append(h('div',{class:'place pat',style:'position:relative'},st?h('div',{class:'meta',text:T('Where we are')}):null,st?whereEyeEls(d,st,ovF,ovFIds,sOn):null,
+  root.append(h('div',{class:'place pat',style:'position:relative'},st?h('div',{class:'meta',text:(function(){var ct=curTour();return ct&&ct.private?ct.name:T('Where we are')})()}):null,st?whereEyeEls(d,st,ovF,ovFIds,sOn):null,
    shiftFrom&&shMode!=='to'?h('div',{class:'where',text:trPlace(shiftFrom.place)}):null,shiftFrom&&shMode!=='to'?prsFrom.map(prCard):null,shiftFrom&&shMode==='both'?h('div',{class:'meta',style:'margin:4px 0',text:'\u2193 '+(lang==='gu'?'મંદિર બદલી':'Mandir shift')}):null,
    st&&shMode!=='from'?h('div',{class:'where',text:allOv?ov.map(function(g){return trPlace(g.l)}).join(' · '):trPlace(st.place)}):null,meta.length?h('div',{class:'meta',text:meta.join(' · ')}):null,
    (st&&st.cardText&&shMode!=='from')?h('div',{class:'note',style:'margin:2px 0;font-weight:600',text:st.cardText}):null,
