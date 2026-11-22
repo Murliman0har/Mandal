@@ -922,7 +922,7 @@ function planView(){
    h('span',{class:'n',text:tn(t)}),
    h('span',{class:'days',text:'›'}),
    t.private?null:h('span',{class:'d',text:fmt(t.start,yo)+' – '+fmt(t.end,yo)}),
-   h('span',{class:'d',text:(t.private?'':dg(days)+' '+T('days')+' · ')+dg(tourStops(t))+' '+T('Stops')}),
+   t.private?null:h('span',{class:'d',text:dg(days)+' '+T('days')+' · '+dg(tourStops(t))+' '+T('Stops')}),
    (t.saints||[]).length?h('span',{class:'row',style:'margin-top:4px'},t.saints.map(function(i){return av(i)})):null))})});
  if(!tours.length)root.append(h('div',{class:'empty',text:ui.canEdit?'No tours yet. Use Add tour.':'No tours yet.'}));
  if(tsel)root.append(h('button',{class:'btn sm',type:'button',style:'align-self:flex-start',onclick:function(){pickTour('')}},lang==='gu'?'બધી યાત્રાઓ બતાવો':'Show all tours'));
