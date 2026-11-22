@@ -826,7 +826,7 @@ function dayView(){
  var dayTxt=(function(){var ts=curTour(),dl=function(k){return (lang==='gu'?'દિવસ ':'Day ')+dg(k)};if(ts)if(ts)return(d>=ts.start&&d<=ts.end)?(ts.private?ts.name:ts.name+' \u00b7 '+dl(diff(ts.start,d)+1)):'';return st?dl(diff(state.tripStart,d)+1):''})();
  var isToday=d===today();
  var dayN=(function(){var ts=curTour();if(ts)return(d>=ts.start&&d<=ts.end&&!ts.private)?diff(ts.start,d)+1:0;return st?diff(state.tripStart,d)+1:0})();
- var pr=(function(){var ts=curTour(),a=ts?ts.start:state.tripStart,z=ts?ts.end:state.tripEnd;if(ts&&ts.private)return null;if(!a||!z||d<a||d>z||(!ts&&!st))return null;var n=diff(a,z)+1,k=diff(a,d)+1;return {k:k,n:n,left:n-k,pct:Math.round(k/n*100)}})();
+ var pr=(function(){var ts=curTour(),a=ts?ts.start:state.tripStart,z=ts?ts.end:state.tripEnd;if(selTours().some(function(x){return x.private}))return null;if(!a||!z||d<a||d>z||(!ts&&!st))return null;var n=diff(a,z)+1,k=diff(a,d)+1;return {k:k,n:n,left:n-k,pct:Math.round(k/n*100)}})();
  // "Today" only appears on today; on any other day, tapping the day line jumps back to today
  root.append(h('div',{class:'nav',style:'justify-content:center'},
   isToday?h('span',{class:'btn',style:'pointer-events:none;font-weight:700',text:T('Today')+(dayN?' '+dg(dayN):'')}):h('button',{class:'btn',type:'button',style:'font-weight:700',title:lang==='gu'?'આજે જવા ટૅપ કરો':'Tap to go to today',text:dayTxt||(lang==='gu'?'આજે':'Today'),onclick:goToday})));
@@ -893,7 +893,7 @@ function tourStops(t){var n=0;t.stays.forEach(function(x){if(x.place!=='India')n
 function syncStays(){
  var T0=visT(),all=[],lo='',hi='';
  T0.forEach(function(t){t.stays=(t.stays||[]).sort(function(a,b){return a.start<b.start?-1:a.start>b.start?1:0});t.stays.forEach(function(x){all.push(x)});
-  if(t.start&&(!lo||t.start<lo))lo=t.start;if(t.end&&(!hi||t.end>hi))hi=t.end});
+  if(t.private)return;if(t.start&&(!lo||t.start<lo))lo=t.start;if(t.end&&(!hi||t.end>hi))hi=t.end});
  all.sort(function(a,b){return a.start<b.start?-1:a.start>b.start?1:0});
  state.stays=all;if(lo){state.tripStart=lo;state.tripEnd=hi}}
 function planView(){
@@ -1076,21 +1076,21 @@ function goDay(d){ui.date=d;ui.view='day';render();window.scrollTo(0,0)}
 function inYatra(e){return e.date>=state.tripStart&&e.date<=state.tripEnd}
 function sumView(){
  var root=h('div',{style:'display:flex;flex-direction:column;gap:14px'}),by={};
- var tsS=selTours(),tour=tsS.length===1?tsS[0]:tsS.length>1?{id:'*',name:tsS.map(function(t){return t.name}).join(' + '),start:tsS.map(function(t){return t.start}).sort()[0],end:tsS.map(function(t){return t.end}).sort().reverse()[0],stays:[].concat.apply([],tsS.map(function(t){return t.stays||[]})),ids:tsS.reduce(function(o,t){o[t.id]=1;return o},{})}:null,scope=tour?'yatra':(ui.sumScope||'yatra'),isY=scope==='yatra',lo=tour?tour.start:state.tripStart,hi=tour?tour.end:state.tripEnd,stayList=tour?(tour.stays||[]):state.stays;
+ var tsS=selTours(),tour=tsS.length===1?tsS[0]:tsS.length>1?{id:'*',name:tsS.map(function(t){return t.name}).join(' + '),start:(tsS.filter(function(t){return !t.private}).length?tsS.filter(function(t){return !t.private}):tsS).map(function(t){return t.start}).sort()[0],end:(tsS.filter(function(t){return !t.private}).length?tsS.filter(function(t){return !t.private}):tsS).map(function(t){return t.end}).sort().reverse()[0],stays:[].concat.apply([],tsS.map(function(t){return t.stays||[]})),ids:tsS.reduce(function(o,t){o[t.id]=1;return o},{})}:null,scope=tour?'yatra':(ui.sumScope||'yatra'),isY=scope==='yatra',lo=tour?tour.start:state.tripStart,hi=tour?tour.end:state.tripEnd,stayList=tour?(tour.stays||[]):state.stays;
  var allT=tsS.length>0&&tsS.length>=visT().length;
  var evs=state.events.filter(function(e){return evVis(e)&&e.type!=='rest'&&e.type!=='lunch'&&e.type!=='pothiyatra'&&(tour?((e.date>=lo&&e.date<=hi&&(tour.ids?!!tour.ids[ownerTour(e)]:ownerTour(e)===tour.id))||(allT&&!ownerTour(e))):(isY?(inYatra(e)||!ownerTour(e)):(!inYatra(e)&&!!ownerTour(e)))&&!finEv(e))&&hasSelSum(e)&&mandalVakta(e)});
  if(tour)root.append(h('h3',{style:'margin:0',text:tour.name}));
  else root.append(h('div',{class:'chips',role:'group','aria-label':'Summary of'},
   [['yatra',T('All tours')],['other',T('Other days')]].map(function(x){return h('button',{class:'chip',type:'button','aria-pressed':scope===x[0]?'true':'false',style:'padding:6px 14px',onclick:function(){ui.sumScope=x[0];ui.sumOpen='';render()}},x[1])})));
- if(isY)root.append(h('p',{class:'note',style:'margin:0',text:fmt(lo,{day:'numeric',month:'short',year:'numeric'})+' – '+fmt(hi,{day:'numeric',month:'short',year:'numeric'})}));
- else root.append(h('p',{class:'note',style:'margin:0',text:lang==='gu'?'યાત્રાઓના સમયગાળા સિવાયના કાર્યક્રમો':'Events on days outside all the tours.'}));
+ if(isY&&!(tour&&tour.private))root.append(h('p',{class:'note',style:'margin:0',text:fmt(lo,{day:'numeric',month:'short',year:'numeric'})+' – '+fmt(hi,{day:'numeric',month:'short',year:'numeric'})}));
+ else if(!isY)root.append(h('p',{class:'note',style:'margin:0',text:lang==='gu'?'યાત્રાઓના સમયગાળા સિવાયના કાર્યક્રમો':'Events on days outside all the tours.'}));
  if(ui.sel.length)root.append(h('p',{class:'note',style:'margin:0',text:(lang==='gu'?'સંત પસંદ કરેલા: ':'Showing only: ')+ui.sel.map(sName).filter(Boolean).join(', ')}));
  SUMORDER.forEach(function(k){by[k]=[]});evs.forEach(function(e){(by[e.type]||by.other).push(e)});
  var sers=[],map={};by.parayan.forEach(function(e){var key=e.title+'|'+e.place,o=map[key];if(!o){o=map[key]={title:e.title,place:e.place,date:e.date,end:e.date,n:0};sers.push(o)}o.n++;if(e.date>o.end)o.end=e.date;if(e.date<o.date)o.date=e.date});
  function count(k){return k==='parayan'?sers.length:by[k].length}
  function sub(k){var tot=0,dn=0,t=today();by[k].forEach(function(e){if(k==='katha'){var n=e.endDate?diff(e.date,e.endDate)+1:1;tot+=n;for(var i=0;i<n;i++){var d=addDays(e.date,i);if(d<t||(d===t&&sessDone({date:t,end:e.end,start:e.start})))dn++}}else{tot++;if(e.endDate&&e.endDate>e.date?e.endDate<t:sessDone(e))dn++}});return tot?dg(dn)+'/'+dg(tot)+' '+T('finished'):''}
  var places={},stops=0,statList;
- if(isY){stayList.forEach(function(s){if(s.place!=='India'){stops++;places[s.place]=1}});statList=[[diff(lo,hi)+1,'Days on tour'],[stops,'Stops'],[Object.keys(places).length,'Different mandirs']]}
+ if(isY&&!(tour&&tour.private)){stayList.forEach(function(s){if(s.place!=='India'){stops++;places[s.place]=1}});statList=[[diff(lo,hi)+1,'Days on tour'],[stops,'Stops'],[Object.keys(places).length,'Different mandirs']]}
  else{var dset={},pset={};evs.forEach(function(e){var n=e.endDate?diff(e.date,e.endDate)+1:1;for(var i=0;i<n;i++)dset[addDays(e.date,i)]=1;if(e.place)pset[e.place]=1});statList=[[evs.length,'Events'],[Object.keys(dset).length,'Days with events'],[Object.keys(pset).length,'Locations']]}
  root.append(h('div',{class:'stats'},
   statList.map(function(x){return h('div',{class:'stat'},h('b',{text:dg(x[0])}),h('span',{text:T(x[1])}))})));
