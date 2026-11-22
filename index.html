@@ -595,7 +595,10 @@ function stayIn(tours,d){var best=null,bl=1e9;tours.forEach(function(t){var l=di
 function stayFor(d){return stayIn(viewTours(),d)}
 function scoped(){return Array.isArray(ui.editTours)}
 function canEditTour(t){return !scoped()||ui.editTours.indexOf(t.id)>-1}
-function canEditDate(d){if(!scoped())return true;var ts=visT(),inOk=false,inOth=false;ts.forEach(function(t){var inR=t.start<=d&&d<=t.end;if(ui.editTours.indexOf(t.id)>-1){if(inR)inOk=true}else if(inR)inOth=true});return inOk&&!inOth}
+// Per event: an editor of a tour can change only that tour's events, even on days another tour also covers.
+function canEditEv(e){if(!scoped())return true;var o=ownerTour(e);return canEditDate(e.date)&&(!o||ui.editTours.indexOf(o)>-1)}
+function canEditSer(r){var ev=state.events.find(function(x){return x.type==='parayan'&&x.title===r.title&&x.place===r.place});return !ev||canEditEv(ev)}
+function canEditDate(d){if(!scoped())return true;var ts=visT(),inOk=false,inOth=false,perm=false;ts.forEach(function(t){var inR=t.start<=d&&d<=t.end;if(ui.editTours.indexOf(t.id)>-1){if(inR){inOk=true;if(t.private)perm=true}}else if(inR&&!t.private)inOth=true});return perm||(inOk&&!inOth)}
 
 // ---- tour status: Finished / Ongoing / Upcoming, from the dates (t.status can override: 'finished' or 'active') ----
 function tourStatus(t){if(t.status==='finished')return 'finished';var d=today();if(t.status==='active')return d<t.start?'upcoming':'ongoing';return d>t.end?'finished':d<t.start?'upcoming':'ongoing'}
@@ -740,7 +743,7 @@ function evCard(e,isNow,isNext){
    e.type==='flight'?flightLine(e,isNow):null,
    kv.length?h('dl',{class:'kv'},kv):null,
    e.photos&&e.photos.length?picsEl(e):null,
-   (ui.canEdit&&canEditDate(e.date)&&!e.virtual)?h('div',{class:'row'},h('button',{class:'btn sm',type:'button',onclick:function(){openForm(e)}},'Edit'),(e.type==='parayan'&&seriesOf(e).length>1)?h('button',{class:'btn sm',type:'button',onclick:function(){openSeries(e.title,e.place)}},'Vakta & part for all sessions'):null):null));
+   (ui.canEdit&&canEditEv(e)&&!e.virtual)?h('div',{class:'row'},h('button',{class:'btn sm',type:'button',onclick:function(){openForm(e)}},'Edit'),(e.type==='parayan'&&seriesOf(e).length>1)?h('button',{class:'btn sm',type:'button',onclick:function(){openSeries(e.title,e.place)}},'Vakta & part for all sessions'):null):null));
 }
 var mstack=[],skipPop=0;
 window.addEventListener('popstate',function(){if(skipPop>0){skipPop--;return}var t=mstack[mstack.length-1];if(t)t.fromBack()});
@@ -861,7 +864,7 @@ function dayView(){
      h('span',{class:'patl',text:'\u{1FA94} '+(evTitle(r)||typeLabel('parayan'))+(r.n>1?' \u00b7 '+(lang==='gu'?dayOf(r.k,r.n):'Day '+r.k+' of '+r.n):'')}),
      r.shastra?h('span',{style:'font-weight:700;font-size:1.15em;line-height:1.3',text:r.shastra}):null,
      bits.length?h('span',{class:'meta',text:bits.join(' \u00b7 ')}):null,
-     (ui.canEdit&&canEditDate(r.date||ui.date))?h('div',{class:'row'},h('button',{class:'btn sm',type:'button',onclick:function(){openWhole(r.title,r.place)}},lang==='gu'?'આખું પારાયણ સુધારો':(r.n>1?'Edit Parayan (Day 1 to '+r.n+')':'Edit Parayan'))):null)},prsFrom=shiftFrom?prs.filter(function(r){return r.place?nrm(r.place)===nrm(shiftFrom.place):(r.f<d&&r.f>=shiftFrom.start)}):[],prsTo=shiftFrom?prs.filter(function(r){return prsFrom.indexOf(r)<0}):prs;
+     (ui.canEdit&&canEditDate(r.date||ui.date)&&canEditSer(r))?h('div',{class:'row'},h('button',{class:'btn sm',type:'button',onclick:function(){openWhole(r.title,r.place)}},lang==='gu'?'આખું પારાયણ સુધારો':(r.n>1?'Edit Parayan (Day 1 to '+r.n+')':'Edit Parayan'))):null)},prsFrom=shiftFrom?prs.filter(function(r){return r.place?nrm(r.place)===nrm(shiftFrom.place):(r.f<d&&r.f>=shiftFrom.start)}):[],prsTo=shiftFrom?prs.filter(function(r){return prsFrom.indexOf(r)<0}):prs;
   // Shift day, viewing today: before the Mandir shift time the card shows only the mandir we are leaving; from that time on, only the next mandir.
   var shEv=shiftFrom?evs.find(function(e){return e.type==='car'&&toMin(dt(e).start)!=null}):null,shMin=shEv?toMin(dt(shEv).start):null,nowM=new Date().getHours()*60+new Date().getMinutes(),
    shMode=(shiftFrom&&shMin!=null&&d===today())?(nowM>=shMin?'to':'from'):'both';
@@ -875,7 +878,7 @@ function dayView(){
    adays.map(function(e){
     return h('div',{style:'margin-top:6px;display:flex;align-items:center;gap:8px;flex-wrap:wrap'},
      h('span',{class:'patl',text:evTitle(e).trim()||evTypeLabel(e)}),
-     (ui.canEdit&&canEditDate(e.date))?h('button',{class:'btn sm',type:'button',onclick:function(){openForm(e)}},'Edit'):null)}),
+     (ui.canEdit&&canEditEv(e))?h('button',{class:'btn sm',type:'button',onclick:function(){openForm(e)}},'Edit'):null)}),
    (st&&ui.canEdit&&canEditDate(d))?h('div',{class:'row',style:'margin-top:6px'},(function(){var ot=viewTours().filter(function(t){return(t.stays||[]).some(function(x){return x.id===st.id})})[0];return ot&&canEditTour(ot)?h('button',{class:'btn sm',type:'button',style:'font-weight:700',onclick:function(){openStay(ot,st)}},lang==='gu'?'ફેરફાર':'Edit'):null})(),h('button',{class:'btn sm',type:'button','aria-label':'Change where saints are',title:'Change where saints are',onclick:function(){openWhere(d,null)}},lang==='gu'?'કેટલાક સંતો અન્યત્ર':'Some saints elsewhere'),whereOn(d).map(function(w){return h('button',{class:'btn sm',type:'button',onclick:function(){openWhere(d,w)}},'Edit · '+trPlace(w.place)+' ('+(w.saints||[]).length+')')})):null));}
 
  if(shiftFrom&&!evs.some(function(e){return e.type==='car'}))evs.unshift({id:'shift-'+d,type:'car',date:d,from:shiftFrom.place,to:shiftFrom&&stayFor(d)?stayFor(d).place:'',place:stayFor(d)?stayFor(d).place:'',title:'',saints:[],virtual:true});
