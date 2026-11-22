@@ -613,7 +613,9 @@ function ownerTour(e){var ts=visT();if(e.tour&&ts.some(function(t){return t.id==
 // A session is finished once its end time (or start time, if no end) has passed.
 function sessDone(e){var t=today();if(e.date<t)return true;if(e.date>t)return false;var tm=e.end||e.start;if(!tm)return false;var n=new Date();return toMin(tm)<=n.getHours()*60+n.getMinutes()}
 function finEv(e){var id=ownerTour(e),t=id&&visT().find(function(x){return x.id===id});return !!t&&tourStatus(t)==='finished'}
-function dayAll(d){var ts=selTours();if(ts.length&&!ts.some(function(t){return t.start<=d&&d<=t.end}))return [];var ids={};ts.forEach(function(t){ids[t.id]=1});return state.events.filter(function(e){return e.date<=d&&d<=(e.endDate||e.date)&&(ts.length?!!ids[ownerTour(e)]:!finEv(e))})}
+// An event saved under a private tour you are not part of never shows to you.
+function evVis(e){if(!e.tour)return true;var t=(state.tours||[]).find(function(x){return x.id===e.tour});return !t||tourVisible(t)}
+function dayAll(d){var ts=selTours();if(ts.length&&!ts.some(function(t){return t.start<=d&&d<=t.end}))return [];var ids={};ts.forEach(function(t){ids[t.id]=1});return state.events.filter(function(e){return evVis(e)&&e.date<=d&&d<=(e.endDate||e.date)&&(ts.length?!!ids[ownerTour(e)]:!finEv(e))})}
 // In the Summary a pravachan counts only for the vakta who gives it, not for every saint present.
 // The Summary only counts events given by the mandal's own saints, not by outside vaktas typed in by name; a pravachan counts only when its vakta is one of them.
 function mandalVakta(e){var v=e.vakta;if(e.type==='pravachan'&&!v)return false;return !v||(v.charAt(0)!=='~'&&state.saints.some(function(x){return x.id===v}))}
@@ -1076,7 +1078,7 @@ function sumView(){
  var root=h('div',{style:'display:flex;flex-direction:column;gap:14px'}),by={};
  var tsS=selTours(),tour=tsS.length===1?tsS[0]:tsS.length>1?{id:'*',name:tsS.map(function(t){return t.name}).join(' + '),start:tsS.map(function(t){return t.start}).sort()[0],end:tsS.map(function(t){return t.end}).sort().reverse()[0],stays:[].concat.apply([],tsS.map(function(t){return t.stays||[]})),ids:tsS.reduce(function(o,t){o[t.id]=1;return o},{})}:null,scope=tour?'yatra':(ui.sumScope||'yatra'),isY=scope==='yatra',lo=tour?tour.start:state.tripStart,hi=tour?tour.end:state.tripEnd,stayList=tour?(tour.stays||[]):state.stays;
  var allT=tsS.length>0&&tsS.length>=visT().length;
- var evs=state.events.filter(function(e){return e.type!=='rest'&&e.type!=='lunch'&&e.type!=='pothiyatra'&&(tour?((e.date>=lo&&e.date<=hi&&(tour.ids?!!tour.ids[ownerTour(e)]:ownerTour(e)===tour.id))||(allT&&!ownerTour(e))):(isY?(inYatra(e)||!ownerTour(e)):(!inYatra(e)&&!!ownerTour(e)))&&!finEv(e))&&hasSelSum(e)&&mandalVakta(e)});
+ var evs=state.events.filter(function(e){return evVis(e)&&e.type!=='rest'&&e.type!=='lunch'&&e.type!=='pothiyatra'&&(tour?((e.date>=lo&&e.date<=hi&&(tour.ids?!!tour.ids[ownerTour(e)]:ownerTour(e)===tour.id))||(allT&&!ownerTour(e))):(isY?(inYatra(e)||!ownerTour(e)):(!inYatra(e)&&!!ownerTour(e)))&&!finEv(e))&&hasSelSum(e)&&mandalVakta(e)});
  if(tour)root.append(h('h3',{style:'margin:0',text:tour.name}));
  else root.append(h('div',{class:'chips',role:'group','aria-label':'Summary of'},
   [['yatra',T('All tours')],['other',T('Other days')]].map(function(x){return h('button',{class:'chip',type:'button','aria-pressed':scope===x[0]?'true':'false',style:'padding:6px 14px',onclick:function(){ui.sumScope=x[0];ui.sumOpen='';render()}},x[1])})));
