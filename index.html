@@ -1390,7 +1390,7 @@ function openForm(ev){
  function syncAll(){var cs=[].slice.call(checks.querySelectorAll('input'));allBox.checked=cs.length>0&&cs.every(function(c){return c.checked})}
  allBox.addEventListener('change',function(){[].slice.call(checks.querySelectorAll('input')).forEach(function(c){c.checked=allBox.checked});checks.dispatchEvent(new Event('change'))});
  checks.addEventListener('change',syncAll);syncAll();
- function tIdsFor(t){var ids=[],aw=awayOn(t,(F.date&&F.date.value)||e.date),sa0=standingAway((F.date&&F.date.value)||e.date);Object.keys(sa0).forEach(function(k){aw[k]=1});(t.saints||[]).forEach(function(i){if(!aw[i]&&state.saints.some(function(s){return s.id===i}))ids.push(i)});(t.tmp||[]).forEach(function(n){ids.push('~'+n)});return ids}
+ function tIdsFor(t){var ids=[],aw=awayOn(t,(F.date&&F.date.value)||e.date),sa0=standingAway((F.date&&F.date.value)||e.date);Object.keys(sa0).forEach(function(k){aw[k]=1});if(t.private){aw={};}(t.saints||[]).forEach(function(i){if(!aw[i]&&state.saints.some(function(s){return s.id===i}))ids.push(i)});(t.tmp||[]).forEach(function(n){ids.push('~'+n)});return ids}
  function applyTour(fresh){
   var t=tours.find(function(x){return x.id===tourSel.value})||null;ui.formTmp=t?(t.tmp||[]).slice():[];
   var ticked=[].slice.call(checks.querySelectorAll('input')).filter(function(c){return c.checked}).map(function(c){return c.value});
