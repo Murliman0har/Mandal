@@ -1383,7 +1383,7 @@ function openForm(ev){
  var e=ev?JSON.parse(JSON.stringify(ev)):{id:'e'+Date.now(),type:'padramani',title:'',date:ui.date,endDate:'',start:'',end:'',place:st?st.place:'',saints:saintsOn(ui.date).map(function(s){return s.id}),vakta:'',shastra:'',portion:'',session:'',car:'',from:'',to:'',driver:'',phone:'',flight:'',yajman:'',notes:'',photos:[]};
  var F={};
  function field(id,label,el,extra){F[id]=el;el.id='f_'+id;return h('div',{class:'f'},h('label',{for:'f_'+id,text:label}),el,extra)}
- function inp(id,type,val){return h('input',{type:type||'text',value:val||''})}
+ function inp(id,type,val){return h('input',{type:type||'text',value:val||'',autocomplete:'off',autocorrect:'off',spellcheck:false})}
  // Colour choice for "Other" events: tap a swatch; the first (empty) one keeps the default grey.
  function colorField(){var cols=['','#E53935','#F57C00','#F9A825','#43A047','#00897B','#1E88E5','#3949AB','#8E24AA','#D81B60','#6D4C41'],hid=h('input',{type:'hidden',value:/^#[0-9a-fA-F]{6}$/.test(e.color||'')?e.color:''}),row=h('div',{class:'row',style:'gap:8px;flex-wrap:wrap;margin-top:4px'});
   function paint(){[].slice.call(row.children).forEach(function(b){var c=b.getAttribute('data-c'),on=c===hid.value;b.style.outline='none';b.style.boxShadow=on?'0 0 0 2px #fff,0 0 0 4px #3f2414':'inset 0 0 0 1px rgba(0,0,0,.25)';b.style.position='relative';b.textContent='';
