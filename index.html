@@ -230,7 +230,8 @@ button{cursor:pointer}
 .vkc{display:inline-flex;align-items:center;gap:6px;margin:0 10px 4px 0;font-size:12.5px}
 .kr{display:flex;align-items:center;gap:10px;padding:7px 0;border-top:1px solid var(--line)}.kr:first-child{border-top:0}
 .kr b{font-size:14px;display:block}
-.kr .kme{margin-left:auto;flex:none;font-size:12px;font-weight:700;padding:3px 12px;border-radius:999px;color:var(--accent);background:var(--surface);box-shadow:0 0 0 2px var(--accent)}
+.kr.me{border-top:0;border-radius:14px;padding:8px 12px;margin:4px 0;box-shadow:0 0 0 2px var(--accent);background:var(--surface)}
+.kr .kme{margin-left:auto;flex:none;font-size:12px;font-weight:700;padding:3px 12px;border-radius:999px;color:#fff;background:var(--accent)}
 .pill{display:inline-block;margin-top:2px;border-radius:99px;padding:2px 10px;font-size:12px;font-weight:700;white-space:pre-wrap}
 .pill.p0{background:#fbe3ea;color:#a0284a}.pill.p1{background:#e3f1dc;color:#2f6b25}.pill.p2{background:#ffe9bf;color:#7a4a00}.pill.p3{background:#e1e9fb;color:#2c4a99}
 .stay.wt{grid-template-columns:64px minmax(0,1fr);align-items:start;gap:4px 12px}
@@ -971,7 +972,7 @@ function planDetail(t){
   var kSeen=[];
   function kSorted(){var items=kl.filter(function(sa){return kr[sa.id]}).map(function(sa,pos){var rk=kRank(kr[sa.id]);if(rk<0){var kk=kKey(kr[sa.id]);var at=kSeen.indexOf(kk);if(at<0){kSeen.push(kk);at=kSeen.length-1}rk=100+at}return {sa:sa,rk:rk,pos:pos}});
    items.sort(function(a,b){return (b.sa.id===ME)-(a.sa.id===ME)||a.rk-b.rk||a.pos-b.pos});return items.map(function(x){return x.sa})}
-  if(open==='kriya'&&hasK)root.append(h('div',{class:'tpanel'},kSorted().map(function(sa,ix){return h('div',{class:'kr'},av(sa.id),h('div',{},h('b',{text:nm(sa.id)}),h('span',{class:'pill p'+(ix%4),text:kr[sa.id]})),sa.id===ME?h('span',{class:'kme',text:gu?'હું':'Me'}):null)})))}
+  if(open==='kriya'&&hasK)root.append(h('div',{class:'tpanel'},kSorted().map(function(sa,ix){return h('div',{class:'kr'+(sa.id===ME?' me':'')},av(sa.id),h('div',{},h('b',{text:nm(sa.id)}),h('span',{class:'pill p'+(ix%4),text:kr[sa.id]})),sa.id===ME?h('span',{class:'kme',text:gu?'હું':'Me'}):null)})))}
  t.stays.forEach(function(s){
   var n=diff(s.start,s.end)+1,seen={},tags=[];
   state.events.forEach(function(e){if(['parayan','katha','pothiyatra','padramani','vastu','outing','sabha','rasotsav','pravachan'].indexOf(e.type)>-1&&e.date<=s.end&&(e.endDate||e.date)>=s.start&&(nrm(e.place)===nrm(s.place)||(!state.stays.some(function(x){return nrm(x.place)===nrm(e.place)})&&(stayFor(e.type==='parayan'?serStart(e):e.date)||{}).id===s.id))){var dd=e.date<s.start?s.start:e.date;if(!seen[e.type]||dd<seen[e.type])seen[e.type]=dd}});
