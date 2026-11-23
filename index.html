@@ -963,7 +963,14 @@ function planDetail(t){
    if(roles.length)pn.append(h('div',{class:'roles'},roles.map(function(r){return h('div',{class:'role'},h('div',{class:'rav'},av(r[1])),h('small',{text:r[0]}),h('b',{text:nm(r[1])}))})));
    if(vk.length)pn.append(h('div',{class:'vk'},h('small',{text:gu?'વક્તા':'Vakta'}),vk.map(function(i){return h('span',{class:'vkc'},av(i),h('span',{text:nm(i)}))})));
    root.append(pn)}
-  if(open==='kriya'&&hasK)root.append(h('div',{class:'tpanel'},kl.filter(function(sa){return kr[sa.id]}).map(function(sa,ix){return h('div',{class:'kr'},av(sa.id),h('div',{},h('b',{text:nm(sa.id)}),h('span',{class:'pill p'+(ix%4),text:kr[sa.id]})))})))}
+  // Kriya list: all the same kriya word together, in a fixed order (Vadil, Kothari, Pujari, Pakshala, Utsav, Bhuj, Gurukul), then any other word in the order it first appears.
+  var KORD=[['વડીલ','vadil','elder'],['કોઠારી','kothari'],['પૂજારી','pujari'],['પાકશાળા','pakshala'],['उत्सव','utsav','ઉત્સવ'],['ભુજ','bhuj'],['ગુરુકુલ','गुरुकुल','gurukul']];
+  function kKey(v){return String(v||'').trim().toLowerCase().replace(/\s+/g,' ')}
+  function kRank(v){var k=kKey(v);for(var a=0;a<KORD.length;a++)if(KORD[a].indexOf(k)>-1)return a;return -1}
+  var kSeen=[];
+  function kSorted(){var items=kl.filter(function(sa){return kr[sa.id]}).map(function(sa,pos){var rk=kRank(kr[sa.id]);if(rk<0){var kk=kKey(kr[sa.id]);var at=kSeen.indexOf(kk);if(at<0){kSeen.push(kk);at=kSeen.length-1}rk=100+at}return {sa:sa,rk:rk,pos:pos}});
+   items.sort(function(a,b){return a.rk-b.rk||a.pos-b.pos});return items.map(function(x){return x.sa})}
+  if(open==='kriya'&&hasK)root.append(h('div',{class:'tpanel'},kSorted().map(function(sa,ix){return h('div',{class:'kr'},av(sa.id),h('div',{},h('b',{text:nm(sa.id)}),h('span',{class:'pill p'+(ix%4),text:kr[sa.id]})))})))}
  t.stays.forEach(function(s){
   var n=diff(s.start,s.end)+1,seen={},tags=[];
   state.events.forEach(function(e){if(['parayan','katha','pothiyatra','padramani','vastu','outing','sabha','rasotsav','pravachan'].indexOf(e.type)>-1&&e.date<=s.end&&(e.endDate||e.date)>=s.start&&(nrm(e.place)===nrm(s.place)||(!state.stays.some(function(x){return nrm(x.place)===nrm(e.place)})&&(stayFor(e.type==='parayan'?serStart(e):e.date)||{}).id===s.id))){var dd=e.date<s.start?s.start:e.date;if(!seen[e.type]||dd<seen[e.type])seen[e.type]=dd}});
