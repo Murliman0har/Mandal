@@ -874,6 +874,10 @@ function dayView(){
  var evs=evsOnView(d).slice().sort(function(a,b){return sortKey(a)-sortKey(b)});
  var shiftFrom=null,adays=evs.filter(function(e){return e.type!=='parayan'&&!dt(e).start&&!e.session});
  evs=evs.filter(function(e){return adays.indexOf(e)<0});
+ // A timed Mandir shift whose From and To are two of the tour's mandirs decides the top card that day, even when the stay dates do not overlap: before its start time the card shows the From mandir, from then on the To mandir.
+ var shOv=null;
+ (function(){var ce=evs.find(function(e){return e.type==='car'&&e.from&&e.to&&toMin(dt(e).start)!=null});if(!ce||!st)return;var vs0=viewStays(),mt=function(x,pl){var q=nrm(pl),w=nrm(x.place);return !!q&&!!w&&(w===q||q.indexOf(w)===0||w.indexOf(q)===0)},A=vs0.find(function(x){return mt(x,ce.from)&&x.start<=d&&d<=x.end}),B=vs0.filter(function(x){return mt(x,ce.to)&&x.start>=d}).sort(function(a,b){return a.start<b.start?-1:a.start>b.start?1:0})[0];if(A&&B&&A!==B&&nrm(A.place)!==nrm(B.place)&&nrm(st.place)!==nrm(B.place))shOv={A:A,B:B}})();
+ if(shOv)st=shOv.B;
  if(st||prs.length||adays.length){var meta=[];
   if(st){var n=diff(st.start,st.end)+1,k=diff(st.start,d)+1,tr0=visT().find(function(x){return (x.stays||[]).indexOf(st)>-1});
    if(tr0){var prior=0,tot=0;tr0.stays.forEach(function(x){if(nrm(x.place)!==nrm(st.place))return;var dn=diff(x.start,x.end)+1;tot+=dn;if(x!==st&&x.end<st.start)prior+=dn});if(tot>n){k+=prior;n=tot}}
@@ -883,6 +887,7 @@ function dayView(){
    var nx=vs[idx+1];if(d===st.end&&nx)meta.push(gu?'આજે '+trPlace(nx.place)+' તરફ પ્રસ્થાન':'Moving to '+nx.place+' today')}
   // Shift day: one stay ends and the next begins the same day, so the card shows both mandirs.
   shiftFrom=(st&&prev&&prev.end===d&&st.start===d&&nrm(prev.place)!==nrm(st.place))?prev:null;
+  if(shOv){shiftFrom=shOv.A;meta=[trPlace(st.region)]}
   var prCard=function(r){var bits=[];if(r.place)bits.push(trPlace(r.place));if(r.yajman)bits.push(T('Yajman')+': '+r.yajman);
     return h('div',{style:'margin-top:6px;display:flex;flex-direction:column;gap:2px'},
      h('span',{class:'patl',text:'\u{1FA94} '+(evTitle(r)||typeLabel('parayan'))+(r.n>1&&!(visT().find(function(x){return x.id===ownerTour(r)})||{}).private?' \u00b7 '+(lang==='gu'?dayOf(r.k,r.n):'Day '+r.k+' of '+r.n):'')}),
