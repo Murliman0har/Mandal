@@ -657,9 +657,9 @@ function tourCast(d){var allowed={},gone={},any=false;viewTours().forEach(functi
  Object.keys(allowed).forEach(function(i){delete gone[i]});return {allowed:allowed,gone:gone,any:any}}
 function saintsOn(d){var c=tourCast(d),sa=standingAway(d);return state.saints.filter(function(s){if(sa[s.id])return false;return s.guest?!!c.allowed[s.id]:!c.gone[s.id]})}
 function vaktaList(cur,d,tid){d=d||ui.date;
- // When the event belongs to a tour, only that tour's saints can be Vakta (its Vakta-role saints if any are marked, otherwise all of them).
+ // When the event belongs to a tour, any saint on that tour can be Vakta, and only them.
  var tt=tid&&(state.tours||[]).find(function(x){return x.id===tid});
- if(tt){var aw=awayOn(tt,d),own=(tt.saints||[]).filter(function(i){return !aw[i]}),vk=(tt.vaktas||[]).filter(function(i){return own.indexOf(i)>-1}),pool=vk.length?vk:own;
+ if(tt){var aw=awayOn(tt,d),own=(tt.saints||[]).filter(function(i){return !aw[i]}),vk=(tt.vaktas||[]).filter(function(i){return own.indexOf(i)>-1}),pool=own;
   return state.saints.filter(function(s){return s.id===cur||pool.indexOf(s.id)>-1}).concat((tt.tmp||[]).filter(function(n){return pool.indexOf('~'+n)>-1&&'~'+n!==cur}).map(function(n){return {id:'~'+n,name:n}}))}
  var ids={},set=false;viewTours().forEach(function(t){if(t.start<=d&&d<=t.end&&t.vaktas&&t.vaktas.length){var aw=awayOn(t,d);set=true;t.vaktas.forEach(function(i){if(!aw[i])ids[i]=1})}});
  var on=saintsOn(d);return state.saints.filter(function(s){if(s.id===cur)return true;if(on.indexOf(s)<0)return false;return set?!!ids[s.id]:s.role==='Vakta'})}
