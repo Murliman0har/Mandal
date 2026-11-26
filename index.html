@@ -754,7 +754,7 @@ function evCard(e,isNow,isNext){
   if(e.vakta){var sv=seriesOf(e).filter(function(x){return x.vakta===e.vakta}),ix=sv.findIndex(function(x){return x.id===e.id})+1;
    kv.push(h('dt',{text:T('Vakta')}),h('dd',{},sName(e.vakta)+' ',ix>0?h('button',{type:'button','aria-label':'Vakta and part of every session',onclick:function(){showVaktaList(e)},style:'border:0;font-family:inherit;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;min-width:24px;height:22px;padding:0 7px;box-sizing:border-box;border-radius:11px;font-size:12px;font-weight:600;background:var(--bg-accent,#E6F1FB);color:var(--text-accent,#185FA5);vertical-align:1px',text:ix+'/'+sv.length}):null))}
   add('Portion',e.portion)}
- if(e.type==='katha'||e.type==='vastu'||e.type==='pravachan')add('Vakta',sName(e.vakta));
+ if(e.type==='katha'||e.type==='vastu')add('Vakta',sName(e.vakta));if(e.type==='pravachan')add(lang==='gu'?'પ્રવક્તા':'Pravakta',sName(e.vakta));
  
  if(e.type==='flight'){add('Flight',e.flight)}
  if(YAJ.indexOf(e.type)>-1&&e.type!=='parayan')add('Yajman',e.yajman);
@@ -1522,7 +1522,7 @@ function openForm(ev){
  function wrap(el){return el.parentNode}
  function isSer(){return isNew&&typeSel.value==='parayan'&&pkindSel.value!=='one'}
  function sync2(){sync();var t=typeSel.value,ser=isSer();
-  var pv=t==='pravachan';groups.kat.hidden=t!=='katha'&&t!=='vastu'&&!pv;groups.prv.hidden=!pv;groups.pk.hidden=!(isNew&&t==='parayan');groups.ser.hidden=!ser;
+  var pv=t==='pravachan';groups.kat.hidden=t!=='katha'&&t!=='vastu'&&!pv;try{var kl=wrap(F.kvakta).querySelector('label');if(kl)kl.textContent=pv?(lang==='gu'?'પ્રવક્તા':'Pravakta'):T('Vakta')}catch(x){}groups.prv.hidden=!pv;groups.pk.hidden=!(isNew&&t==='parayan');groups.ser.hidden=!ser;
   wrap(F.end).hidden=pv;wrap(F.place).hidden=pv;wrap(F.notes).hidden=pv;pics.hidden=pv;
   var car=t==='car';wrap(F.title).hidden=car;wrap(F.titleGu).hidden=car;wrap(F.endDate).hidden=ser||pv||car;wrap(F.start).parentNode.hidden=ser;wrap(F.session).hidden=ser;wrap(F.vakta).hidden=ser;wrap(F.portion).hidden=ser;
   var dl=wrap(F.date).querySelector('label');if(dl)dl.textContent=ser?'Start date':T('Date')
