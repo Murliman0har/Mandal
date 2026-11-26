@@ -979,7 +979,11 @@ function planDetail(t){
  rows.sort(function(x,y){return (y.i===ME)-(x.i===ME)||x.rk-y.rk||x.pos-y.pos});
  if(rows.length){
   var open=ui.tourInfo&&ui.tourInfo.split('|')[0]===t.id?ui.tourInfo.split('|')[1]:'';
-  root.append(h('div',{class:'row',style:'gap:6px'},h('button',{class:'chip'+(open==='roles'?' hl':''),type:'button','aria-expanded':open==='roles'?'true':'false',onclick:function(){ui.tourInfo=open==='roles'?'':t.id+'|roles';render()}},gu?'કર્તવ્ય':'Roles')));
+  var sb=h('button',{type:'button','aria-expanded':open==='roles'?'true':'false',style:'display:flex;align-items:center;gap:12px;width:100%;text-align:left;background:var(--accent);color:#fff;border:0;border-radius:12px;padding:12px 14px;cursor:pointer;font:inherit',onclick:function(){ui.tourInfo=open==='roles'?'':t.id+'|roles';render()}},
+   h('span',{style:'width:40px;height:40px;border-radius:10px;background:rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;font-size:20px;flex:none',text:'🙏'}),
+   h('span',{style:'display:flex;flex-direction:column'},h('b',{style:'font-size:16px',text:gu?'સેવા':'Sewa'}),h('small',{style:'opacity:.85',text:gu?dg(rows.length)+' સંતો · જોવા માટે ટેપ કરો':rows.length+' saints · tap to see'})),
+   h('span',{style:'margin-left:auto;font-size:18px;transition:transform .2s;transform:rotate('+(open==='roles'?'180':'0')+'deg)',text:'⌄'}));
+  root.append(sb);
   if(open==='roles')root.append(h('div',{class:'tpanel'},rows.map(function(o){var i=o.i,tags=rl[i].slice().sort(function(x,y){var a=roleIx(x),b=roleIx(y);return (a<0?99:a)-(b<0?99:b)});
    return h('div',{class:'kr'+(i===ME?' me':'')},av(i),h('div',{},h('b',{text:nm(i)}),h('div',{style:'display:flex;flex-wrap:wrap;gap:5px'},tags.map(function(k,j){var x=roleIx(k);return h('span',{class:'pill p'+((x<0?j+ROLES.length:x)%4),text:roleLabel(k)})}))),i===ME?h('span',{class:'kme',text:gu?'હું':'Me'}):null)})))}
  t.stays.forEach(function(s){
