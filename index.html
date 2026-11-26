@@ -1080,7 +1080,7 @@ function openStay(t,s){
   var base=Date.now(),k=0;
   var us=modeVal(autoOf(ty,sl),'start'),ue=modeVal(autoOf(ty,sl),'end');
   days.forEach(function(d){var x=have[d];if(x){if(ovr||(x.start===us&&x.end===ue)){x.start=st;x.end=en}x.place=q.place}
-   else state.events.push({id:'e'+base+'a'+ty.charAt(0)+(sl||'')+(k++),type:ty,title:'',date:d,endDate:'',start:st,end:en,place:q.place,saints:saintsOn(d).map(function(z){return z.id}),vakta:'',shastra:'',portion:'',session:'',car:'',from:'',to:'',driver:'',phone:'',flight:'',yajman:'',notes:'',photos:[],auto:tag})});
+   else state.events.push({id:'e'+base+'a'+ty.charAt(0)+(sl||'')+(k++),type:ty,title:'',date:d,endDate:'',start:st,end:en,place:q.place,tour:t.id,saints:(function(){var aw=awayOn(t,d),own=(t.saints||[]).filter(function(i){return !aw[i]});return own.length?own:saintsOn(d).map(function(z){return z.id})})(),vakta:'',shastra:'',portion:'',session:'',car:'',from:'',to:'',driver:'',phone:'',flight:'',yajman:'',notes:'',photos:[],auto:tag})});
   state.events.sort(function(a,b){return a.date<b.date?-1:a.date>b.date?1:0})}
  function field(id,label,type,val){var el=h('input',{type:type,value:val||''});F[id]=el;el.id='sf_'+id;return h('div',{class:'f'},h('label',{for:'sf_'+id,text:label}),el)}
  function timesOf(sid,ty,k,sl){var l=state.events.filter(function(x){return x.auto===sid+':'+ty+(sl||'')}).sort(function(a,b){return a.date<b.date?-1:1});return modeVal(l,k)}
