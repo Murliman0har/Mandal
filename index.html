@@ -656,7 +656,12 @@ function tourCast(d){var allowed={},gone={},any=false;viewTours().forEach(functi
  if(any){var vid={};viewTours().forEach(function(t){vid[t.id]=1});visT().forEach(function(u){if(!vid[u.id]&&u.start<=d&&d<=u.end)(u.saints||[]).forEach(function(i){gone[i]=1})})}
  Object.keys(allowed).forEach(function(i){delete gone[i]});return {allowed:allowed,gone:gone,any:any}}
 function saintsOn(d){var c=tourCast(d),sa=standingAway(d);return state.saints.filter(function(s){if(sa[s.id])return false;return s.guest?!!c.allowed[s.id]:!c.gone[s.id]})}
-function vaktaList(cur,d){d=d||ui.date;var ids={},set=false;viewTours().forEach(function(t){if(t.start<=d&&d<=t.end&&t.vaktas&&t.vaktas.length){var aw=awayOn(t,d);set=true;t.vaktas.forEach(function(i){if(!aw[i])ids[i]=1})}});
+function vaktaList(cur,d,tid){d=d||ui.date;
+ // When the event belongs to a tour, only that tour's saints can be Vakta (its Vakta-role saints if any are marked, otherwise all of them).
+ var tt=tid&&(state.tours||[]).find(function(x){return x.id===tid});
+ if(tt){var aw=awayOn(tt,d),own=(tt.saints||[]).filter(function(i){return !aw[i]}),vk=(tt.vaktas||[]).filter(function(i){return own.indexOf(i)>-1}),pool=vk.length?vk:own;
+  return state.saints.filter(function(s){return s.id===cur||pool.indexOf(s.id)>-1}).concat((tt.tmp||[]).filter(function(n){return pool.indexOf('~'+n)>-1&&'~'+n!==cur}).map(function(n){return {id:'~'+n,name:n}}))}
+ var ids={},set=false;viewTours().forEach(function(t){if(t.start<=d&&d<=t.end&&t.vaktas&&t.vaktas.length){var aw=awayOn(t,d);set=true;t.vaktas.forEach(function(i){if(!aw[i])ids[i]=1})}});
  var on=saintsOn(d);return state.saints.filter(function(s){if(s.id===cur)return true;if(on.indexOf(s)<0)return false;return set?!!ids[s.id]:s.role==='Vakta'})}
 function evsOn(d){return dayAll(d).filter(hasSel)}
 // ---- time zones: stored times are always local to the event's place. Only the dashboard shows them in the viewer's own time. ----
@@ -1422,7 +1427,7 @@ function openForm(ev){
   var f=field('color',lang==='gu'?'રંગ':'Colour',hid,row);paint();return f}
  function vplus(k){return plusBtn(function(){addSaintInline(function(sa){['vakta','kvakta'].forEach(function(kk){var el=F[kk];if(el&&![].slice.call(el.options).some(function(o){return o.value===sa.id}))el.append(h('option',{value:sa.id,text:sa.name}))});F[k].value=sa.id},true,haveIn(F[k]))})}
  function sel(opts,val){var s=h('select',{});opts.forEach(function(o){var op=h('option',{value:o[0],text:o[1]});if(o[0]===val)op.selected=true;s.append(op)});return s}
- var saintOpts=[['','Not chosen']].concat(vaktaList(e.vakta,e.date).map(function(s){return[s.id,s.name]}));
+ var saintOpts=[['','Not chosen']].concat(vaktaList(e.vakta,e.date,initTour).map(function(s){return[s.id,s.name]}));
  if(e.vakta&&e.vakta.charAt(0)==='~')saintOpts.push([e.vakta,e.vakta.slice(1)]);
  var pEdit=!isNew&&e.type==='parayan';
  var typeSel=sel(Object.keys(TYPES).map(function(k){return[k,TYPES[k]]}),e.type);
@@ -1524,6 +1529,8 @@ function openForm(ev){
   partBox.hidden=!pEdit;
   if(pEdit){[typeSel,F.title,F.titleGu,F.place,F.session,F.shastra,F.portion,tzSelE,F.tour].forEach(function(x){if(x)wrap(x).hidden=true});wrap(F.date).parentNode.hidden=true;groups.yajman.hidden=true;groups.oth.hidden=true}}
  typeSel.addEventListener('change',sync2);pkindSel.addEventListener('change',sync2);sync2();
+  // Changing the tour changes who can be Vakta.
+  tourSel.addEventListener('change',function(){var dd=(F.date&&F.date.value)||e.date;['vakta','kvakta'].forEach(function(k){var el=F[k];if(!el)return;var cur=el.value;el.textContent='';[['','Not chosen']].concat(vaktaList(cur,dd,tourSel.value).map(function(x){return[x.id,x.name]})).forEach(function(o){var op=h('option',{value:o[0],text:o[1]});if(o[0]===cur)op.selected=true;el.append(op)})})});
  var guLast='',guTmr=null,guReq=0;
  function guKnown(x){var o=lang;lang='gu';try{return tr(x)}finally{lang=o}}
  function guFill(v){
@@ -1631,7 +1638,7 @@ function showVaktaList(e){
 function openSeries(title,place){
  var list=seriesOf({title:title,place:place});if(!list.length)return;
  var modal=h('div',{class:'modal',role:'dialog','aria-modal':'true','aria-label':'Vakta and part of Shastra'}),rows=[];
- function vsel(val){var opts=[['','Not chosen']].concat(vaktaList(val,list[0].date).map(function(s){return[s.id,s.name]}));if(val&&val.charAt(0)==='~')opts.push([val,val.slice(1)]);var s=h('select',{});opts.forEach(function(o){var op=h('option',{value:o[0],text:o[1]});if(o[0]===val)op.selected=true;s.append(op)});s.addEventListener('change',relabel);return s}
+ function vsel(val){var opts=[['','Not chosen']].concat(vaktaList(val,list[0].date,list[0].tour).map(function(s){return[s.id,s.name]}));if(val&&val.charAt(0)==='~')opts.push([val,val.slice(1)]);var s=h('select',{});opts.forEach(function(o){var op=h('option',{value:o[0],text:o[1]});if(o[0]===val)op.selected=true;s.append(op)});s.addEventListener('change',relabel);return s}
  // Each vakta in the list shows, in a circle, how many sessions of this parayan are given to him so far (1 once, 2 twice, ...).
  function circ(n){return n>0&&n<=20?String.fromCharCode(0x245F+n):'('+n+')'}
  function relabel(){var sl=[all].concat(rows.map(function(r){return r.v})),c={};rows.forEach(function(r){if(r.v.value)c[r.v.value]=(c[r.v.value]||0)+1});
