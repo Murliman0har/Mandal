@@ -957,30 +957,29 @@ function planView(){
  return root}
 // First day of a parayan series (same title and place): a parayan belongs to the mandir where it starts, not the one we move to on its last day.
 function serStart(e){var m=e.date;state.events.forEach(function(x){if(x.type===e.type&&x.title===e.title&&x.place===e.place&&x.date<m)m=x.date});return m}
+var ROLES=[['mahant','મહંત','Mahant'],['vadil','વડીલ','Vadil'],['kothari','કોઠારી','Kothari'],['bhandari','ભંડારી','Bhandari'],['pakshala','પાકશાળા','Pakshala'],['pujari','પૂજારી','Pujari'],['vakta','વક્તા','Vakta'],['lightwater','લાઇટ & પાણી','Light & water'],['chass','છાશ','Chass'],['mevo','મેવો','Mevo']];
+var RWORD={'વડીલ':'vadil','vadil':'vadil','elder':'vadil','કોઠારી':'kothari','kothari':'kothari','પૂજારી':'pujari','pujari':'pujari','પાકશાળા':'pakshala','pakshala':'pakshala','ભંડારી':'bhandari','bhandari':'bhandari','છાશ':'chass','chass':'chass','મેવો':'mevo','mevo':'mevo'};
+// Roles of each saint on a tour: {saintId:[roleKey,...]}. Older tours are read from the separate Mahant/Bhandari/Kothari/Vakta fields and from a Kriya note that is just a role word.
+function tourRoles(t){if(t.roles)return t.roles;var r={};function add(i,k){if(!i)return;r[i]=r[i]||[];if(r[i].indexOf(k)<0)r[i].push(k)}
+ add(t.mahant,'mahant');add(t.bhandari,'bhandari');add(t.kothari,'kothari');(t.vaktas||[]).forEach(function(i){add(i,'vakta')});
+ var kr=t.kriya||{};Object.keys(kr).forEach(function(i){var w=RWORD[String(kr[i]||'').trim().toLowerCase()];if(w)add(i,w)});return r}
+function tourNotes(t){var kr=t.kriya||{},o={};Object.keys(kr).forEach(function(i){var v=String(kr[i]||'').trim();if(v&&(t.roles||!RWORD[v.toLowerCase()]))o[i]=v});return o}
 function nrm(x){return String(x||'').toLowerCase().replace(/[^a-z0-9઀-૿]/g,'')}
 function planDetail(t){
  var root=h('div',{style:'display:flex;flex-direction:column;gap:10px'}),cur=stayIn([t],today()),yo={weekday:'short',day:'numeric',month:'short',year:'numeric'};
  var gu=lang==='gu',kr=t.kriya||{};
  function nm(i){return sName(i)||i}
- var roles=[[gu?'મહંત':'Mahant',t.mahant],[gu?'ભંડારી':'Bhandari',t.bhandari],[gu?'કોઠારી':'Kothari',t.kothari]].filter(function(r){return r[1]}),vk=t.vaktas||[];
- var kl=state.saints.filter(function(x){return (t.saints||[]).indexOf(x.id)>-1}),hasK=kl.length&&Object.keys(kr).some(function(i){return kr[i]});
- // Closed by default so the page stays short; tap a chip to open it, tap again to close.
- if(roles.length||vk.length||hasK){
+ var rl=tourRoles(t),nt=tourNotes(t),on=t.saints||[];
+ function who(k){return Object.keys(rl).filter(function(i){return rl[i].indexOf(k)>-1}).sort(function(x,y){return (y===ME)-(x===ME)})}
+ var groups=ROLES.map(function(r){return [r,who(r[0])]}).filter(function(g){return g[1].length}),notes=Object.keys(nt);
+ // Closed by default so the page stays short; tap the chip to open it, tap again to close.
+ if(groups.length||notes.length){
   var open=ui.tourInfo&&ui.tourInfo.split('|')[0]===t.id?ui.tourInfo.split('|')[1]:'';
-  function chipB(k,lab){return h('button',{class:'chip'+(open===k?' hl':''),type:'button','aria-expanded':open===k?'true':'false',onclick:function(){ui.tourInfo=open===k?'':t.id+'|'+k;render()}},lab)}
-  root.append(h('div',{class:'row',style:'gap:6px'},(roles.length||vk.length)?chipB('lead',gu?'આગેવાનો':'Leaders'):null,hasK?chipB('kriya',gu?'ક્રિયા':'Kriya'):null));
-  if(open==='lead'){var pn=h('div',{class:'tpanel'});
-   if(roles.length)pn.append(h('div',{class:'roles'},roles.map(function(r){return h('div',{class:'role'},h('div',{class:'rav'},av(r[1])),h('small',{text:r[0]}),h('b',{text:nm(r[1])}))})));
-   if(vk.length)pn.append(h('div',{class:'vk'},h('small',{text:gu?'વક્તા':'Vakta'}),vk.map(function(i){return h('span',{class:'vkc'},av(i),h('span',{text:nm(i)}))})));
-   root.append(pn)}
-  // Kriya list: all the same kriya word together, in a fixed order (Vadil, Kothari, Pujari, Pakshala, Utsav, Bhuj, Gurukul), then any other word in the order it first appears.
-  var KORD=[['વડીલ','vadil','elder'],['કોઠારી','kothari'],['પૂજારી','pujari'],['પાકશાળા','pakshala'],['उत्सव','utsav','ઉત્સવ'],['ભુજ','bhuj'],['ગુરુકુલ','गुरुकुल','gurukul']];
-  function kKey(v){return String(v||'').trim().toLowerCase().replace(/\s+/g,' ')}
-  function kRank(v){var k=kKey(v);for(var a=0;a<KORD.length;a++)if(KORD[a].indexOf(k)>-1)return a;return -1}
-  var kSeen=[];
-  function kSorted(){var items=kl.filter(function(sa){return kr[sa.id]}).map(function(sa,pos){var rk=kRank(kr[sa.id]);if(rk<0){var kk=kKey(kr[sa.id]);var at=kSeen.indexOf(kk);if(at<0){kSeen.push(kk);at=kSeen.length-1}rk=100+at}return {sa:sa,rk:rk,pos:pos}});
-   items.sort(function(a,b){return (b.sa.id===ME)-(a.sa.id===ME)||a.rk-b.rk||a.pos-b.pos});return items.map(function(x){return x.sa})}
-  if(open==='kriya'&&hasK)root.append(h('div',{class:'tpanel'},kSorted().map(function(sa,ix){return h('div',{class:'kr'+(sa.id===ME?' me':'')},av(sa.id),h('div',{},h('b',{text:nm(sa.id)}),h('span',{class:'pill p'+(ix%4),text:kr[sa.id]})),sa.id===ME?h('span',{class:'kme',text:gu?'હું':'Me'}):null)})))}
+  root.append(h('div',{class:'row',style:'gap:6px'},h('button',{class:'chip'+(open==='roles'?' hl':''),type:'button','aria-expanded':open==='roles'?'true':'false',onclick:function(){ui.tourInfo=open==='roles'?'':t.id+'|roles';render()}},gu?'કર્તવ્ય':'Roles')));
+  if(open==='roles'){var pn=h('div',{class:'tpanel'});
+   groups.forEach(function(g){pn.append(h('div',{class:'vk'},h('small',{text:gu?g[0][1]:g[0][2]}),g[1].map(function(i){return h('span',{class:'vkc'+(i===ME?' me':'')},av(i),h('span',{text:nm(i)}))})))});
+   if(notes.length){pn.append(h('small',{style:'display:block;margin-top:6px',text:gu?'નોંધ':'Notes'}));notes.sort(function(x,y){return (y===ME)-(x===ME)}).forEach(function(i,ix){pn.append(h('div',{class:'kr'+(i===ME?' me':'')},av(i),h('div',{},h('b',{text:nm(i)}),h('span',{class:'pill p'+(ix%4),text:nt[i]}))))})}
+   root.append(pn)}}
  t.stays.forEach(function(s){
   var n=diff(s.start,s.end)+1,seen={},tags=[];
   state.events.forEach(function(e){if(['parayan','katha','pothiyatra','padramani','vastu','outing','sabha','rasotsav','pravachan'].indexOf(e.type)>-1&&e.date<=s.end&&(e.endDate||e.date)>=s.start&&(nrm(e.place)===nrm(s.place)||(!state.stays.some(function(x){return nrm(x.place)===nrm(e.place)})&&(stayFor(e.type==='parayan'?serStart(e):e.date)||{}).id===s.id))){var dd=e.date<s.start?s.start:e.date;if(!seen[e.type]||dd<seen[e.type])seen[e.type]=dd}});
@@ -1012,10 +1011,14 @@ function openTour(t){
   vchecks.textContent='';var ids=ticked();
   if(!ids.length)vchecks.append(h('span',{class:'note',text:'Tick saints above first.'}));
   pplOf(ids).forEach(function(sa){var c=h('input',{type:'checkbox',value:sa.id});c.checked=first?q.vaktas.indexOf(sa.id)>-1:!!keep[sa.id];vchecks.append(h('label',{},c,av(sa.id),short(sa)))})}
- var offSel={},kBox=h('div',{style:'display:flex;flex-direction:column;gap:8px'}),kIn={};q.kriya=q.kriya||{};
+ var rBox=h('div',{style:'display:flex;flex-direction:column;gap:8px'}),rSel=JSON.parse(JSON.stringify(tourRoles(q))),rDrawn=false;
+ function fillR(){rBox.textContent='';var ids=ticked();if(!ids.length)rBox.append(h('span',{class:'note',text:'Tick saints above first.'}));
+  pplOf(ids).forEach(function(sa){var i=sa.id,mine=rSel[i]||[];rBox.append(h('div',{style:'border:1px solid var(--line);border-radius:12px;padding:8px 10px'},h('div',{class:'row',style:'align-items:center;gap:8px;margin-bottom:6px'},av(i),h('b',{text:sName(i)||sa.name})),
+   h('div',{style:'display:flex;flex-wrap:wrap;gap:6px'},ROLES.map(function(r){var k=r[0],onR=mine.indexOf(k)>-1;return h('button',{type:'button',class:'chip'+(onR?' hl':''),'aria-pressed':onR?'true':'false',onclick:function(){var l=rSel[i]=rSel[i]||[];var at=l.indexOf(k);if(at>-1)l.splice(at,1);else{if(k==='mahant')Object.keys(rSel).forEach(function(o){var j=rSel[o].indexOf('mahant');if(j>-1)rSel[o].splice(j,1)});l.push(k)}fillR()}},r[1])}))))})}
+ var offSel={},kBox=h('div',{style:'display:flex;flex-direction:column;gap:8px'}),kIn={};q.kriya=tourNotes(q);
  function fillK(){Object.keys(kIn).forEach(function(i){q.kriya[i]=kIn[i].value});kIn={};kBox.textContent='';var ids=ticked();
   if(!ids.length)kBox.append(h('span',{class:'note',text:'Tick saints above first.'}));
-  pplOf(ids).forEach(function(sa){var i=sa.id,inp=h('textarea',{rows:'2',placeholder:'Kriya: what they will do, to-do list...',style:'width:100%;box-sizing:border-box;min-width:0'});inp.value=q.kriya[i]||'';kIn[i]=inp;kBox.append(h('div',{style:'display:grid;grid-template-columns:minmax(80px,34%) 1fr;gap:8px 12px;align-items:start'},h('span',{class:'row',style:'align-items:center;gap:8px'},av(i),h('span',{text:sName(i)})),inp))})}
+  pplOf(ids).forEach(function(sa){var i=sa.id,inp=h('textarea',{rows:'2',placeholder:'Note: extra details, to-do list...',style:'width:100%;box-sizing:border-box;min-width:0'});inp.value=q.kriya[i]||'';kIn[i]=inp;kBox.append(h('div',{style:'display:grid;grid-template-columns:minmax(80px,34%) 1fr;gap:8px 12px;align-items:start'},h('span',{class:'row',style:'align-items:center;gap:8px'},av(i),h('span',{text:sName(i)})),inp))})}
  function offField(id,label){var el=h('select',{id:'tf_'+id});offSel[id]=el;F[id]=el;return h('div',{class:'f'},h('label',{for:'tf_'+id,text:label}),el)}
  function fillOff(){var ids=ticked();['mahant','bhandari','kothari'].forEach(function(k){var el=offSel[k],cur=el.value||q[k]||'';el.textContent='';el.append(h('option',{value:'',text:'Not chosen'}));
   ids.forEach(function(i){var sa=pplOf([i])[0];if(sa){var op=h('option',{value:i,text:sa.name});if(i===cur)op.selected=true;el.append(op)}});
@@ -1023,9 +1026,9 @@ function openTour(t){
  q.tmp=q.tmp||[];
  var tmpBox=h('div',{style:'display:flex;flex-wrap:wrap;gap:6px'});
  var ready=false;
- function drawTmp(){tmpBox.textContent='';q.tmp.forEach(function(n,i){tmpBox.append(h('span',{class:'chip hl',style:'gap:6px;cursor:default'},av('~'+n),n,h('button',{type:'button','aria-label':'Remove '+n,class:'btn sm',style:'padding:0 7px',onclick:function(){q.tmp.splice(i,1);drawTmp();if(ready){fillV();fillOff();fillK()}}},'×')))});if(!q.tmp.length)tmpBox.append(h('span',{class:'note',text:'None yet.'}))}
+ function drawTmp(){tmpBox.textContent='';q.tmp.forEach(function(n,i){tmpBox.append(h('span',{class:'chip hl',style:'gap:6px;cursor:default'},av('~'+n),n,h('button',{type:'button','aria-label':'Remove '+n,class:'btn sm',style:'padding:0 7px',onclick:function(){q.tmp.splice(i,1);drawTmp();if(ready){fillK();fillR()}}},'×')))});if(!q.tmp.length)tmpBox.append(h('span',{class:'note',text:'None yet.'}))}
  var tmpIn=h('input',{type:'text',placeholder:'Name, e.g. a guest or a driver',autocomplete:'off',style:'flex:1;min-width:0'});
- function addTmp(){var n=tmpIn.value.trim();if(!n)return;if(q.tmp.indexOf(n)<0)q.tmp.push(n);tmpIn.value='';drawTmp();if(ready){fillV();fillOff();fillK()}}
+ function addTmp(){var n=tmpIn.value.trim();if(!n)return;if(q.tmp.indexOf(n)<0)q.tmp.push(n);tmpIn.value='';drawTmp();if(ready){fillK();fillR()}}
  tmpIn.addEventListener('keydown',function(ev){if(ev.key==='Enter'){ev.preventDefault();addTmp()}});
  drawTmp();
  var modal=h('div',{class:'modal',role:'dialog','aria-modal':'true','aria-label':isNew?'Add tour':'Edit tour'});
@@ -1036,8 +1039,10 @@ function openTour(t){
   q.nameGu=F.nameGu.value.trim();if(!q.nameGu)delete q.nameGu;
   q.start=F.start.value||d;q.end=F.end.value&&F.end.value>=q.start?F.end.value:q.start;if(stSel.value)q.status=stSel.value;else delete q.status;
   q.saints=[].slice.call(checks.querySelectorAll('input')).filter(function(c){return c.checked}).map(function(c){return c.value});
-  q.vaktas=[].slice.call(vchecks.querySelectorAll('input')).filter(function(c){return c.checked}).map(function(c){return c.value});
-  fillK();var kk={};Object.keys(q.kriya).forEach(function(i){if(q.kriya[i]&&q.kriya[i].trim()&&ticked().indexOf(i)>-1)kk[i]=q.kriya[i].trim()});q.kriya=kk;q.mahant=F.mahant.value.trim();q.bhandari=F.bhandari.value.trim();q.kothari=F.kothari.value.trim();
+  fillK();var kk={},tk=ticked();Object.keys(q.kriya).forEach(function(i){if(q.kriya[i]&&q.kriya[i].trim()&&tk.indexOf(i)>-1)kk[i]=q.kriya[i].trim()});q.kriya=kk;
+  var rr={};Object.keys(rSel).forEach(function(i){if(tk.indexOf(i)>-1&&rSel[i].length)rr[i]=ROLES.map(function(r){return r[0]}).filter(function(k){return rSel[i].indexOf(k)>-1})});q.roles=rr;
+  function firstOf(k){return Object.keys(rr).filter(function(i){return rr[i].indexOf(k)>-1})}
+  q.mahant=firstOf('mahant')[0]||'';q.bhandari=firstOf('bhandari')[0]||'';q.kothari=firstOf('kothari')[0]||'';q.vaktas=firstOf('vakta');
   state.tours=state.tours||[];var i=state.tours.findIndex(function(y){return y.id===q.id});if(i>-1)state.tours[i]=q;else state.tours.push(q);
   syncStays();ui.dirty++;ui.tourOpen=q.id;modal.remove();render()}},
   h('div',{class:'row',style:'align-items:center;gap:10px'},isNew?null:delBtn,h('h2',{style:'margin:0',text:isNew?'Add tour':'Edit tour'})),
@@ -1047,11 +1052,10 @@ function openTour(t){
   h('div',{class:'f'},h('label',{text:'Status'}),stSel,h('p',{class:'note',style:'margin:2px 0 0',text:'Auto follows the dates. Choose Finished or Ongoing only to override them.'})),
   h('div',{class:'f'},h('span',{class:'lab',text:T('Saints')}),h('p',{class:'note',style:'margin:0',text:'Tick the saints on this tour. Saints marked as guests appear in the forms only on this tour\u2019s dates.'}),checks),
   h('div',{class:'f'},h('span',{class:'lab',text:'Temporary saints (this tour only)'}),h('p',{class:'note',style:'margin:0',text:'Add anyone who is only on this tour, such as a guest or a driver. They appear as the first options when you add an event and choose this tour.'}),tmpBox,h('div',{class:'row',style:'gap:8px;align-items:center'},tmpIn,h('button',{class:'btn sm',type:'button',onclick:addTmp},'+ Add'))),
-  h('div',{class:'f'},h('span',{class:'lab',text:'Vakta list'}),h('p',{class:'note',style:'margin:0',text:'Tick who can be chosen as Vakta during this tour. Only these saints appear in the Vakta selection on the tour dates.'}),vchecks),
-  offField('mahant','Mahant'),offField('bhandari','Bhandari'),offField('kothari','Kothari'),
-  h('div',{class:'f'},h('span',{class:'lab',text:'Kriya'}),h('p',{class:'note',style:'margin:0',text:'Write what each saint will do on this tour. Anything you like, such as a to-do list.'}),kBox),
+  h('div',{class:'f'},h('span',{class:'lab',text:'કર્તવ્ય (Roles)'}),h('p',{class:'note',style:'margin:0',text:'Tap the roles of each saint on this tour. A saint can have several. Only one Mahant. Saints with Vakta appear in the Vakta selection on the tour dates.'}),rBox),
+  h('div',{class:'f'},h('span',{class:'lab',text:'Notes'}),h('p',{class:'note',style:'margin:0',text:'Optional extra details for each saint, such as a to-do list.'}),kBox),
   h('div',{class:'row'},h('button',{class:'btn pri',type:'submit'},T('Done')),h('button',{class:'btn',type:'button',onclick:function(){modal.remove()}},T('Cancel'))));
- fillV();fillOff();fillK();ready=true;checks.addEventListener('change',function(){fillV();fillOff();fillK()});
+ fillK();fillR();ready=true;checks.addEventListener('change',function(){fillK();fillR()});
  modal.append(form);document.body.append(modal);backable(modal);F.name.focus()}
 function modeVal(l,k){var c={},best='',bn=0;l.forEach(function(x){var v=x[k]||'';c[v]=(c[v]||0)+1;if(c[v]>bn){bn=c[v];best=v}});return best}
 function openStay(t,s){
@@ -1666,7 +1670,7 @@ function deleteSaint(sa){
  if(!confirm(msg))return Promise.resolve(false);
  var id=sa.id,pass=getPass();
  state.saints=state.saints.filter(function(x){return x.id!==id});
- (state.tours||[]).forEach(function(t){t.saints=(t.saints||[]).filter(function(i){return i!==id});if(t.vaktas)t.vaktas=t.vaktas.filter(function(i){return i!==id});['mahant','bhandari','kothari'].forEach(function(k){if(t[k]===id)t[k]=''});if(t.kriya)delete t.kriya[id]});
+ (state.tours||[]).forEach(function(t){t.saints=(t.saints||[]).filter(function(i){return i!==id});if(t.vaktas)t.vaktas=t.vaktas.filter(function(i){return i!==id});['mahant','bhandari','kothari'].forEach(function(k){if(t[k]===id)t[k]=''});if(t.kriya)delete t.kriya[id];if(t.roles)delete t.roles[id]});
  state.events.forEach(function(e){if(e.saints)e.saints=e.saints.filter(function(i){return i!==id});if(e.vakta===id)e.vakta=''});
  ui.sel=ui.sel.filter(function(i){return i!==id});saveSel();
  ui.dirty++;save();
