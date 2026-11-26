@@ -2,7 +2,6 @@
   "name": "કાર્યક્રમ",
   "short_name": "કાર્યક્રમ",
   "description": "Day-by-day program for the saints' tour: UK, Sweden, Gambia, Senegal and Dubai.",
-  "start_url": "./",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait",
