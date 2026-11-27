@@ -656,11 +656,12 @@ function tourCast(d){var allowed={},gone={},any=false;viewTours().forEach(functi
  if(any){var vid={};viewTours().forEach(function(t){vid[t.id]=1});visT().forEach(function(u){if(!vid[u.id]&&u.start<=d&&d<=u.end)(u.saints||[]).forEach(function(i){gone[i]=1})})}
  Object.keys(allowed).forEach(function(i){delete gone[i]});return {allowed:allowed,gone:gone,any:any}}
 function saintsOn(d){var c=tourCast(d),sa=standingAway(d);return state.saints.filter(function(s){if(sa[s.id])return false;return s.guest?!!c.allowed[s.id]:!c.gone[s.id]})}
-function vaktaList(cur,d,tid){d=d||ui.date;
- // When the event belongs to a tour, any saint on that tour can be Vakta, and only them.
+function vaktaList(cur,d,tid,all){d=d||ui.date;
+ // Event on a tour: Vakta = that tour's saints with the Vakta (વક્તા) badge; Pravakta (all=true) = any saint on that tour. Nobody from outside the tour.
  var tt=tid&&(state.tours||[]).find(function(x){return x.id===tid});
- if(tt){var aw=awayOn(tt,d),own=(tt.saints||[]).filter(function(i){return !aw[i]}),vk=(tt.vaktas||[]).filter(function(i){return own.indexOf(i)>-1}),pool=own;
-  return state.saints.filter(function(s){return s.id===cur||pool.indexOf(s.id)>-1}).concat((tt.tmp||[]).filter(function(n){return pool.indexOf('~'+n)>-1&&'~'+n!==cur}).map(function(n){return {id:'~'+n,name:n}}))}
+ if(tt){var own=(tt.saints||[]).concat((tt.tmp||[]).map(function(n){return '~'+n})),rl=tourRoles(tt),vk=own.filter(function(i){return (rl[i]||[]).indexOf('vakta')>-1}),pool=all||!vk.length?own:vk;
+  var out=[];pool.forEach(function(i){var sa=state.saints.find(function(z){return z.id===i});if(sa)out.push(sa);else if(i.charAt(0)==='~')out.push({id:i,name:i.slice(1)})});
+  if(cur&&pool.indexOf(cur)<0){var c=state.saints.find(function(z){return z.id===cur});if(c)out.unshift(c)}return out}
  var ids={},set=false;viewTours().forEach(function(t){if(t.start<=d&&d<=t.end&&t.vaktas&&t.vaktas.length){var aw=awayOn(t,d);set=true;t.vaktas.forEach(function(i){if(!aw[i])ids[i]=1})}});
  var on=saintsOn(d);return state.saints.filter(function(s){if(s.id===cur)return true;if(on.indexOf(s)<0)return false;return set?!!ids[s.id]:s.role==='Vakta'})}
 function evsOn(d){return dayAll(d).filter(hasSel)}
@@ -1530,7 +1531,9 @@ function openForm(ev){
   if(pEdit){[typeSel,F.title,F.titleGu,F.place,F.session,F.shastra,F.portion,tzSelE,F.tour].forEach(function(x){if(x)wrap(x).hidden=true});wrap(F.date).parentNode.hidden=true;groups.yajman.hidden=true;groups.oth.hidden=true}}
  typeSel.addEventListener('change',sync2);pkindSel.addEventListener('change',sync2);sync2();
   // Changing the tour changes who can be Vakta.
-  tourSel.addEventListener('change',function(){var dd=(F.date&&F.date.value)||e.date;['vakta','kvakta'].forEach(function(k){var el=F[k];if(!el)return;var cur=el.value;el.textContent='';[['','Not chosen']].concat(vaktaList(cur,dd,tourSel.value).map(function(x){return[x.id,x.name]})).forEach(function(o){var op=h('option',{value:o[0],text:o[1]});if(o[0]===cur)op.selected=true;el.append(op)})})});
+  // Who can be chosen depends on the tour, and on the type (Pravakta = anyone on the tour).
+  function refillV(){var dd=(F.date&&F.date.value)||e.date;['vakta','kvakta'].forEach(function(k){var el=F[k];if(!el)return;var cur=el.value;el.textContent='';[['','Not chosen']].concat(vaktaList(cur,dd,tourSel.value,k==='kvakta'&&typeSel.value==='pravachan').map(function(x){return[x.id,x.name]})).forEach(function(o){var op=h('option',{value:o[0],text:o[1]});if(o[0]===cur)op.selected=true;el.append(op)});if(cur&&el.value!==cur&&cur.charAt(0)==='~'){var op=h('option',{value:cur,text:cur.slice(1)});op.selected=true;el.append(op)}})}
+  tourSel.addEventListener('change',refillV);typeSel.addEventListener('change',refillV);if(F.date)F.date.addEventListener('change',refillV);refillV();
  var guLast='',guTmr=null,guReq=0;
  function guKnown(x){var o=lang;lang='gu';try{return tr(x)}finally{lang=o}}
  function guFill(v){
