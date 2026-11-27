@@ -859,7 +859,7 @@ function dayView(){
  var dayTxt=(function(){var ts=curTour(),dl=function(k){return (lang==='gu'?'દિવસ ':'Day ')+dg(k)};if(ts)if(ts)return(d>=ts.start&&d<=ts.end)?(ts.private?tn(ts):tn(ts)+' \u00b7 '+dl(diff(ts.start,d)+1)):'';return st?dl(diff(state.tripStart,d)+1):''})();
  var isToday=d===today();
  var dayN=(function(){var ts=curTour();if(ts)return(d>=ts.start&&d<=ts.end&&!ts.private)?diff(ts.start,d)+1:0;return st?diff(state.tripStart,d)+1:0})();
- var pr=(function(){var ts=curTour(),a=ts?ts.start:state.tripStart,z=ts?ts.end:state.tripEnd;if(selTours().some(function(x){return x.private}))return null;if(!a||!z||d<a||d>z||(!ts&&!st))return null;var n=diff(a,z)+1,k=diff(a,d)+1;return {k:k,n:n,left:n-k,pct:Math.round(k/n*100)}})();
+ var pr=(function(){var ts=curTour(),a=ts?ts.start:state.tripStart,z=ts?ts.end:state.tripEnd;if(selTours().some(function(x){return x.private}))return null;if(!a||!z||d<a||d>z||(!ts&&!st))return null;var n=diff(a,z)+1,k=diff(a,d)+1,t0=today(),kt=t0<a?0:t0>z?n:diff(a,t0)+1;return {k:kt,n:n,left:n-k,pct:Math.round(kt/n*100)}})();
  // "Today" only appears on today; on any other day, tapping the day line jumps back to today
  root.append(h('div',{class:'nav',style:'justify-content:center'},
   isToday?h('span',{class:'btn',style:'pointer-events:none;font-weight:700',text:T('Today')+(dayN?' '+dg(dayN):'')}):h('button',{class:'btn',type:'button',style:'font-weight:700',title:lang==='gu'?'આજે જવા ટૅપ કરો':'Tap to go to today',text:dayTxt||(lang==='gu'?'આજે':'Today'),onclick:goToday})));
