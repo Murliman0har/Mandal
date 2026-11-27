@@ -1838,7 +1838,9 @@ function openAdmin(){
  function drawIn(){
   var byS={};list.forEach(function(g){if(g.saint_id)byS[g.saint_id]=g});
   var tourIds={};(state.tours||[]).forEach(function(t){(t.saints||[]).forEach(function(i){tourIds[i]=1})});
-  var all=orderedSaints(),main=all.filter(function(s){return s.id===ME||tourIds[s.id]}),rest=all.filter(function(s){return main.indexOf(s)<0});
+  var all0=orderedSaints(),rk=function(s){if(s.id===ME)return 0;var g=byS[s.id];if(!g)return 4;if(g.blocked)return 3;return g.role==='editor'?1:2},all=all0.map(function(s,i){return {s:s,i:i}}).sort(function(a,b){return rk(a.s)-rk(b.s)||a.i-b.i}).map(function(x){return x.s});
+  // Me first, then editors, then readers (blocked after them), then saints without a link.
+  var main=all.filter(function(s){return s.id===ME||tourIds[s.id]}),rest=all.filter(function(s){return main.indexOf(s)<0});
   var orphans=list.filter(function(g){return !g.saint_id||!all.some(function(s){return s.id===g.saint_id})});
   function srow(s){return byS[s.id]?row(byS[s.id],s):nolink(s)}
   var nMissing=loading?0:missing().length;
