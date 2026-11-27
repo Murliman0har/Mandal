@@ -1790,8 +1790,8 @@ function openAdmin(){
  var nameIn=h('input',{type:'text',placeholder:'Name, e.g. Nandkishor Dasji',autocomplete:'off',style:'padding:9px;border:1px solid var(--line);border-radius:10px;background:var(--surface)'});
  var roleSel=h('select',{style:'padding:9px;border:1px solid var(--line);border-radius:10px;background:var(--surface)'},h('option',{value:'reader',text:'Reader (view only)'}),h('option',{value:'editor',text:'Editor (can change)'}));
  var codeCk=h('input',{type:'checkbox',checked:true});
- function load(){loading=true;draw();rpc('admin_list_guests',{p_passcode:pass}).then(function(r){list=r||[];loading=false;draw()}).catch(function(e){loading=false;msg=adminErr(e);draw()})}
- function act(name,args){msg='';return rpc(name,args).then(load).catch(function(e){msg=adminErr(e);draw()})}
+ function load(soft){if(!soft){loading=true;draw()}return rpc('admin_list_guests',{p_passcode:pass}).then(function(r){list=r||[];loading=false;draw()}).catch(function(e){loading=false;msg=adminErr(e);draw()})}
+ function act(name,args){msg='';return rpc(name,args).then(function(){return load(true)}).catch(function(e){msg=adminErr(e);draw()})}
  function mkLink(s,role){return rpc('admin_add_guest',{p_passcode:pass,p_name:s.name,p_slug:slugify(s.name)+(codeCk.checked?'-'+rcode():''),p_role:role||(s.id===ME?'editor':'reader'),p_saint_id:s.id})}
  function makeOne(s){msg='';mkLink(s).then(load).catch(function(e){msg=adminErr(e);draw()})}
  function missing(){return state.saints.filter(function(s){return !list.some(function(g){return g.saint_id===s.id})})}
@@ -1805,8 +1805,9 @@ function openAdmin(){
   state.saints.push(s);ui.dirty++;save();
   msg='';mkLink(s,roleSel.value).then(function(g){nameIn.value='';msg='Added '+nm+'. Link: '+guestBase()+g.slug;load()}).catch(function(e){msg='Saint added, but the link failed: '+adminErr(e);load()})}
  function scopeBox(g){
-  var tours=(state.tours||[]).slice().sort(function(a,b){return a.start<b.start?-1:a.start>b.start?1:0}),cur=Array.isArray(g.edit_tours)?g.edit_tours:null;
-  function setT(v){act('admin_set_guest_tours',{p_passcode:pass,p_id:g.id,p_tours:v})}
+  var allT=(state.tours||[]).slice().sort(function(a,b){return a.start<b.start?-1:a.start>b.start?1:0}),tours=allT.filter(function(t){return tourStatus(t)!=='finished'}),cur=Array.isArray(g.edit_tours)?g.edit_tours:null;
+  // Change on screen at once, save quietly in the background (no jump to the top).
+  function setT(v){g.edit_tours=v;draw();msg='';rpc('admin_set_guest_tours',{p_passcode:pass,p_id:g.id,p_tours:v}).catch(function(e){msg=adminErr(e);load(true)})}
   if(!tours.length)return null;
   var all=h('input',{type:'checkbox'});all.checked=cur===null;all.addEventListener('change',function(){setT(all.checked?null:tours.map(function(t){return t.id}))});
   var box=h('div',{style:'display:flex;flex-direction:column;gap:4px;font-size:13px;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:8px'},
@@ -1833,7 +1834,8 @@ function openAdmin(){
    h('div',{class:'faint',text:'No link yet'}),
    h('div',{class:'row'},h('button',{class:'btn sm',type:'button',onclick:function(){makeOne(s)}},'Make link'),h('button',{class:'btn sm',type:'button',onclick:function(){openSaintEdit(s,load)}},'Edit name & photo')))}
  function put(){[].slice.call(arguments).forEach(function(c){if(Array.isArray(c))c.forEach(function(x){if(x)body.append(x)});else if(c)body.append(c)})}
- function draw(){body.textContent='';
+ function draw(){var sc=modal.scrollTop,sc2=body.parentNode?body.parentNode.scrollTop:0;body.textContent='';requestAnimationFrame(function(){modal.scrollTop=sc;if(body.parentNode)body.parentNode.scrollTop=sc2});drawIn()}
+ function drawIn(){
   var byS={};list.forEach(function(g){if(g.saint_id)byS[g.saint_id]=g});
   var tourIds={};(state.tours||[]).forEach(function(t){(t.saints||[]).forEach(function(i){tourIds[i]=1})});
   var all=orderedSaints(),main=all.filter(function(s){return s.id===ME||tourIds[s.id]}),rest=all.filter(function(s){return main.indexOf(s)<0});
