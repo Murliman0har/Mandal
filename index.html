@@ -1055,7 +1055,8 @@ function openTour(t){
  tmpIn.addEventListener('keydown',function(ev){if(ev.key==='Enter'){ev.preventDefault();addTmp()}});
  drawTmp();
  var modal=h('div',{class:'modal',role:'dialog','aria-modal':'true','aria-label':isNew?'Add tour':'Edit tour'});
- var delBtn=delIcon(h('button',{class:'btn danger',type:'button',title:T('Delete'),'aria-label':T('Delete'),style:'padding:6px 9px;line-height:0',onclick:function(){if(!confirm('Delete this tour and its mandirs? Events are kept.'))return;state.tours=state.tours.filter(function(x){return x.id!==q.id});syncStays();ui.tourOpen='';ui.dirty++;modal.remove();render()}}));
+ var delBtn=delIcon(h('button',{class:'btn danger',type:'button',title:T('Delete'),'aria-label':T('Delete'),style:'padding:6px 9px;line-height:0',onclick:function(){var sids={};(q.stays||[]).forEach(function(x){sids[x.id]=1});var mine=function(e){return e.tour===q.id||(e.auto&&sids[String(e.auto).split(':')[0]])},nE=state.events.filter(mine).length;
+  if(!confirm('Delete this tour, its mandirs and its '+nE+' event'+(nE===1?'':'s')+'? This cannot be undone.'))return;state.events=state.events.filter(function(e){return !mine(e)});state.tours=state.tours.filter(function(x){return x.id!==q.id});syncStays();ui.tourOpen='';ui.dirty++;modal.remove();render()}}));
  var form=h('form',{class:'form',onsubmit:function(x){x.preventDefault();
   addTmp();
   q.name=F.name.value.trim();if(!q.name){F.name.focus();return}
