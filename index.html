@@ -614,7 +614,14 @@ function visT(){return (state.tours||[]).filter(tourVisible)}
 function viewTours(){var ts=selTours();return ts.length?ts:visT()}
 function viewStays(){var all=[];viewTours().forEach(function(t){(t.stays||[]).forEach(function(x){all.push(x)})});return all.sort(function(a,b){return a.start<b.start?-1:a.start>b.start?1:0})}
 function stayIn(tours,d){var best=null,bl=1e9;tours.forEach(function(t){var l=diff(t.start,t.end);(t.stays||[]).forEach(function(x){if(x.start<=d&&d<=x.end&&l<=bl){best=x;bl=l}})});return best}
-function stayFor(d){return stayIn(viewTours(),d)}
+// A Mandir shift moves us: from the day after a shift, the day's stay is the shift's To mandir, until a new mandir stay starts or another shift moves us again.
+function shiftStay(d,base){var vid={};viewTours().forEach(function(t){vid[t.id]=1});var from=base?base.start:'';
+ var sh=(state.events||[]).filter(function(e){return e.type==='car'&&(e.to||'').trim()&&e.date<d&&e.date>=from&&(!e.tour||vid[e.tour])&&evVis(e)}).sort(function(a,b){return a.date<b.date?-1:a.date>b.date?1:(a.start||'')<(b.start||'')?-1:1}).pop();
+ if(!sh)return base;var q=nrm(sh.to),all=[];visT().forEach(function(t){(t.stays||[]).forEach(function(x){all.push(x)})});
+ var m=all.filter(function(x){var w=nrm(x.place);return w&&(w===q||q.indexOf(w)===0||w.indexOf(q)===0)}).sort(function(a,b){return Math.abs(diff(a.start,d))-Math.abs(diff(b.start,d))})[0];
+ if(base&&m&&nrm(m.place)===nrm(base.place))return base;
+ return {id:'sh_'+sh.id,place:m?m.place:sh.to,region:m?m.region||'':'',start:addDays(sh.date,1),end:base?base.end:d,shift:true}}
+function stayFor(d){return shiftStay(d,stayIn(viewTours(),d))}
 function scoped(){return Array.isArray(ui.editTours)}
 function canEditTour(t){return !scoped()||ui.editTours.indexOf(t.id)>-1}
 // Per event: an editor of a tour can change only that tour's events, even on days another tour also covers.
@@ -882,7 +889,7 @@ function dayView(){
  evs=evs.filter(function(e){return adays.indexOf(e)<0});
  // A timed Mandir shift whose From and To are two of the tour's mandirs decides the top card that day, even when the stay dates do not overlap: before its start time the card shows the From mandir, from then on the To mandir.
  var shOv=null;
- (function(){var ce=evs.find(function(e){return e.type==='car'&&e.from&&e.to&&toMin(dt(e).start)!=null});if(!ce||!st)return;var vs0=viewStays(),mt=function(x,pl){var q=nrm(pl),w=nrm(x.place);return !!q&&!!w&&(w===q||q.indexOf(w)===0||w.indexOf(q)===0)},A=vs0.find(function(x){return mt(x,ce.from)&&x.start<=d&&d<=x.end}),B=vs0.filter(function(x){return mt(x,ce.to)&&x.start>=d}).sort(function(a,b){return a.start<b.start?-1:a.start>b.start?1:0})[0];if(A&&B&&A!==B&&nrm(A.place)!==nrm(B.place)&&nrm(st.place)!==nrm(B.place))shOv={A:A,B:B}})();
+ (function(){var ce=evs.find(function(e){return e.type==='car'&&e.from&&e.to&&toMin(dt(e).start)!=null});if(!ce||!st)return;var vs0=viewStays(),mt=function(x,pl){var q=nrm(pl),w=nrm(x.place);return !!q&&!!w&&(w===q||q.indexOf(w)===0||w.indexOf(q)===0)},A=mt(st,ce.from)?st:vs0.find(function(x){return mt(x,ce.from)&&x.start<=d&&d<=x.end}),B=vs0.filter(function(x){return mt(x,ce.to)&&x.start>=d}).sort(function(a,b){return a.start<b.start?-1:a.start>b.start?1:0})[0]||vs0.filter(function(x){return mt(x,ce.to)&&x.start<d}).sort(function(a,b){return a.start<b.start?1:-1})[0];if(A&&B&&A!==B&&nrm(A.place)!==nrm(B.place)&&nrm(st.place)!==nrm(B.place))shOv={A:A,B:B}})();
  if(shOv)st=shOv.B;
  if(st||prs.length||adays.length){var meta=[];
   if(st){var n=diff(st.start,st.end)+1,k=diff(st.start,d)+1,tr0=visT().find(function(x){return (x.stays||[]).indexOf(st)>-1});
