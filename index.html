@@ -615,8 +615,10 @@ function viewTours(){var ts=selTours();return ts.length?ts:visT()}
 function viewStays(){var all=[];viewTours().forEach(function(t){(t.stays||[]).forEach(function(x){all.push(x)})});return all.sort(function(a,b){return a.start<b.start?-1:a.start>b.start?1:0})}
 function stayIn(tours,d){var best=null,bl=1e9;tours.forEach(function(t){var l=diff(t.start,t.end);(t.stays||[]).forEach(function(x){if(x.start<=d&&d<=x.end&&l<=bl){best=x;bl=l}})});return best}
 // A Mandir shift moves us: from the day after a shift, the day's stay is the shift's To mandir, until a new mandir stay starts or another shift moves us again.
-function shiftStay(d,base,tours,live){var vid={};(tours||viewTours()).forEach(function(t){vid[t.id]=1});var from=base?base.start:'',nm0=new Date(),nowM=nm0.getHours()*60+nm0.getMinutes();
- var sh=(state.events||[]).filter(function(e){return e.type==='car'&&(e.to||'').trim()&&(e.date<d||(live&&e.date===d&&d===today()&&toMin(e.start)!=null&&toMin(e.start)<=nowM))&&e.date>=from&&(!e.tour||vid[e.tour])&&evVis(e)}).sort(function(a,b){return a.date<b.date?-1:a.date>b.date?1:(a.start||'')<(b.start||'')?-1:1}).pop();
+function shiftStay(d,base,tours,live){var vid={};(tours||viewTours()).forEach(function(t){vid[t.id]=1});
+ // Only shifts of the tour this stay belongs to count (an untagged shift belongs to the tour that owns its date).
+ var own=base&&visT().find(function(t){return (t.stays||[]).indexOf(base)>-1});if(own){vid={};vid[own.id]=1}var from=base?base.start:'',nm0=new Date(),nowM=nm0.getHours()*60+nm0.getMinutes();
+ var sh=(state.events||[]).filter(function(e){return e.type==='car'&&(e.to||'').trim()&&(e.date<d||(live&&e.date===d&&d===today()&&toMin(e.start)!=null&&toMin(e.start)<=nowM))&&e.date>=from&&!!vid[ownerTour(e)]&&evVis(e)}).sort(function(a,b){return a.date<b.date?-1:a.date>b.date?1:(a.start||'')<(b.start||'')?-1:1}).pop();
  if(!sh)return base;var q=nrm(sh.to),all=[];visT().forEach(function(t){(t.stays||[]).forEach(function(x){all.push(x)})});
  var m=all.filter(function(x){var w=nrm(x.place);return w&&(w===q||q.indexOf(w)===0||w.indexOf(q)===0)}).sort(function(a,b){return Math.abs(diff(a.start,d))-Math.abs(diff(b.start,d))})[0];
  if(base&&m&&nrm(m.place)===nrm(base.place))return base;
