@@ -615,17 +615,17 @@ function viewTours(){var ts=selTours();return ts.length?ts:visT()}
 function viewStays(){var all=[];viewTours().forEach(function(t){(t.stays||[]).forEach(function(x){all.push(x)})});return all.sort(function(a,b){return a.start<b.start?-1:a.start>b.start?1:0})}
 function stayIn(tours,d){var best=null,bl=1e9;tours.forEach(function(t){var l=diff(t.start,t.end);(t.stays||[]).forEach(function(x){if(x.start<=d&&d<=x.end&&l<=bl){best=x;bl=l}})});return best}
 // A Mandir shift moves us: from the day after a shift, the day's stay is the shift's To mandir, until a new mandir stay starts or another shift moves us again.
-function shiftStay(d,base,tours,live){var vid={};(tours||viewTours()).forEach(function(t){vid[t.id]=1});
+function shiftStay(d,base,tours,live,who){var vid={};(tours||viewTours()).forEach(function(t){vid[t.id]=1});
  // Only shifts of the tour this stay belongs to count (an untagged shift belongs to the tour that owns its date).
  var own=base&&visT().find(function(t){return (t.stays||[]).indexOf(base)>-1});if(own){vid={};vid[own.id]=1}var from=base?base.start:'',nm0=new Date(),nowM=nm0.getHours()*60+nm0.getMinutes();
- var sh=(state.events||[]).filter(function(e){return e.type==='car'&&(e.to||'').trim()&&(e.date<d||(live&&e.date===d&&d===today()&&toMin(e.start)!=null&&toMin(e.start)<=nowM))&&e.date>=from&&!!vid[ownerTour(e)]&&evVis(e)}).sort(function(a,b){return a.date<b.date?-1:a.date>b.date?1:(a.start||'')<(b.start||'')?-1:1}).pop();
+ var sh=(state.events||[]).filter(function(e){return e.type==='car'&&(e.to||'').trim()&&(e.date<d||(live&&e.date===d&&d===today()&&toMin(e.start)!=null&&toMin(e.start)<=nowM))&&e.date>=from&&!!vid[ownerTour(e)]&&(!who||!(e.saints||[]).length||e.saints.indexOf(who)>-1)&&evVis(e)}).sort(function(a,b){return a.date<b.date?-1:a.date>b.date?1:(a.start||'')<(b.start||'')?-1:1}).pop();
  if(!sh)return base;var q=nrm(sh.to),all=[];visT().forEach(function(t){(t.stays||[]).forEach(function(x){all.push(x)})});
  var m=all.filter(function(x){var w=nrm(x.place);return w&&(w===q||q.indexOf(w)===0||w.indexOf(q)===0)}).sort(function(a,b){return Math.abs(diff(a.start,d))-Math.abs(diff(b.start,d))})[0];
  if(base&&m&&nrm(m.place)===nrm(base.place))return base;
  return {id:'sh_'+sh.id,place:m?m.place:sh.to,region:m?m.region||'':'',start:addDays(sh.date,1),end:base?base.end:d,shift:true}}
 // A tour's stay on a day, following its Mandir shifts (today: also a shift that has already started).
-function tourStay(t,d){return shiftStay(d,stayIn([t],d),[t],true)}
-function stayFor(d){return shiftStay(d,stayIn(viewTours(),d))}
+function tourStay(t,d,i){return shiftStay(d,stayIn([t],d),[t],true,i)}
+function stayFor(d){return shiftStay(d,stayIn(viewTours(),d),null,false,ME||'')}
 function scoped(){return Array.isArray(ui.editTours)}
 function canEditTour(t){return !scoped()||ui.editTours.indexOf(t.id)>-1}
 // Per event: an editor of a tour can change only that tour's events, even on days another tour also covers.
@@ -833,12 +833,15 @@ function whereEyeEls(d,st,ovF,ovFIds,sOn){
  // Saints on a standing base (e.g. the 4 at Gurukul) are shown there until a shorter change brings them elsewhere.
  (state.dayWhere||[]).forEach(function(w){if(!(w.start<=d&&d<=(w.end||w.start))||diff(w.start,w.end||w.start)<30)return;(w.saints||[]).forEach(function(i){if(SA[i]&&state.saints.some(function(z){return z.id===i})){var g=places.find(function(x){return x.l===w.place&&!x.tour});if(!g){g={l:w.place,ids:[],stay:false,tour:''};places.unshift(g)}if(g.ids.indexOf(i)<0)g.ids.push(i)}})});
  // Each saint is at the stay of the shortest tour that lists them that day (London six at Harrow, the rest at Anjar); anyone on no tour is at the day's stay.
- rest.forEach(function(i){var best=null,bl=1e9;visT().forEach(function(t){if(t.start<=d&&d<=t.end&&((t.saints||[]).indexOf(i)>-1||inTourEvent(t,i,d))){var l=diff(t.start,t.end),sy=tourStay(t,d);if(sy&&l<bl){bl=l;best=sy}}});put(i,best?best.place:st.place,'')});
- function put(i,lab,tn){if(SA[i])return;var w=whereOn(d).find(function(z){return (z.saints||[]).indexOf(i)>-1&&diff(z.start,z.end||z.start)<30});if(w){lab=w.place;tn=''}var g=places.find(function(x){return x.l===lab&&(x.tour||'')===(tn||'')});if(!g){g={l:lab,ids:[],stay:false,tour:tn||''};places.push(g)}if(g.ids.indexOf(i)<0)g.ids.push(i)}
+ rest.forEach(function(i){var best=null,bl=1e9;visT().forEach(function(t){if(t.start<=d&&d<=t.end&&((t.saints||[]).indexOf(i)>-1||inTourEvent(t,i,d))){var l=diff(t.start,t.end),sy=tourStay(t,d,i);if(sy&&l<bl){bl=l;best=sy}}});put(i,best?best.place:st.place,'')});
+ function liveAt(i){if(d!==today())return null;var n0=new Date(),nm=n0.getHours()*60+n0.getMinutes();
+  var e=(state.events||[]).filter(function(e){return (e.type==='outing'||e.type==='car'||e.type==='other'||e.type==='flight')&&e.date===d&&(e.saints||[]).indexOf(i)>-1&&evVis(e)&&toMin(e.start)!=null&&toMin(e.start)<=nm&&nm<(toMin(e.end)!=null?toMin(e.end):toMin(e.start)+60)}).pop();
+  if(!e)return null;return e.type==='car'?(T('On the way to')+' '+(e.to||e.place||'')).trim():(e.title||e.place||'').trim()||null}
+ function put(i,lab,tn){if(SA[i])return;var lv=liveAt(i);if(lv){lab=lv;tn=''}var w=whereOn(d).find(function(z){return (z.saints||[]).indexOf(i)>-1&&diff(z.start,z.end||z.start)<30});if(w){lab=w.place;tn=''}var g=places.find(function(x){return x.l===lab&&(x.tour||'')===(tn||'')});if(!g){g={l:lab,ids:[],stay:false,tour:tn||''};places.push(g)}if(g.ids.indexOf(i)<0)g.ids.push(i)}
  // Saints who are away on a shorter tour running inside the tour being viewed (e.g. London inside Anjar).
  viewTours().forEach(function(t){if(!(t.start<=d&&d<=t.end))return;var l=diff(t.start,t.end);visT().forEach(function(u){if(u.id===t.id||!(u.start<=d&&d<=u.end)||diff(u.start,u.end)>=l)return;
-  var sy=tourStay(u,d),lab=sy?sy.place:u.name,ids=(u.saints||[]).filter(function(i){return state.saints.some(function(z){return z.id===i})&&!ovFIds[i]});if(!ids.length)return;
-  ids.forEach(function(i){put(i,lab,u.name)})})});
+  var ids=(u.saints||[]).filter(function(i){return state.saints.some(function(z){return z.id===i})&&!ovFIds[i]});if(!ids.length)return;
+  ids.forEach(function(i){var sy=tourStay(u,d,i);put(i,sy?sy.place:u.name,u.name)})})});
  // The other way round: when viewing a shorter tour (London) the rest of the longer tour it sits inside (Anjar) are at their base.
  viewTours().forEach(function(t){if(!(t.start<=d&&d<=t.end))return;var l=diff(t.start,t.end);visT().forEach(function(B){if(B.id===t.id||!(B.start<=d&&d<=B.end)||diff(B.start,B.end)<=l)return;
   var sy=tourStay(B,d),lab=sy?sy.place:B.name,taken={};places.forEach(function(x){x.ids.forEach(function(i){taken[i]=1})});
