@@ -1083,6 +1083,7 @@ function openStay(t,s){
  var q=s?JSON.parse(JSON.stringify(s)):{id:'s'+Date.now(),place:'',region:'',start:last?addDays(last,1):t.start,end:last?addDays(last,1):t.start};
  var F={};
  function autoOf(ty,sl){return state.events.filter(function(x){return x.auto===q.id+':'+ty+(sl||'')}).sort(function(a,b){return a.date<b.date?-1:1})}
+ function shEv(){return state.events.find(function(x){return x.auto===q.id+':shift'})}
  function autoVal(ty,k,sl){return modeVal(autoOf(ty,sl),k)}
  function syncDaily(ty,st,en,sl){var tag=q.id+':'+ty+(sl||''),days=[],n=diff(q.start,q.end)+1,i;
   for(i=0;i<n;i++)days.push(addDays(q.start,i));
@@ -1126,11 +1127,19 @@ function openStay(t,s){
   if(q.start<t.start)t.start=q.start;if(q.end>t.end)t.end=q.end;
   ovr=!isNew&&ovrCk.checked;
   syncDaily('pothiyatra',F.aS.value,F.aE.value);syncDaily('pothiyatra',F.a2S.value,F.a2E.value,'2');syncDaily('katha',F.kS.value,F.kE.value);syncDaily('katha',F.k2S.value,F.k2E.value,'2');
+  // Mandir shift from the previous mandir of this tour to this one, on the From date.
+  (function(){var tag=q.id+':shift',ex=shEv(),L=F.shL.value,A=F.shA.value;if(!L){if(ex)state.events=state.events.filter(function(x){return x!==ex});return}
+   var prev=t.stays.filter(function(x){return x.id!==q.id&&x.start<q.start}).sort(function(a,b){return a.start<b.start?1:-1})[0],fromP=prev?prev.place:'';
+   var aw=awayOn(t,q.start),own=(t.saints||[]).filter(function(i){return !aw[i]});
+   var e=ex||{id:'e'+Date.now()+'sh',type:'car',title:'',endDate:'',vakta:'',shastra:'',portion:'',session:'',car:'',cars:[],driver:'',phone:'',flight:'',yajman:'',notes:'',photos:[],auto:tag,saints:own};
+   e.date=q.start;e.start=L;e.end=A||'';e.from=fromP;e.to=q.place;e.place=q.place;e.tour=t.id;e.title=(fromP?fromP+' to ':'')+q.place;if(!ex)state.events.push(e)})();
   syncStays();ui.dirty++;modal.remove();render()}},
   h('div',{class:'row',style:'align-items:center;gap:10px'},isNew?null:delBtn,h('h2',{style:'margin:0',text:isNew?'Add mandir':'Edit mandir'})),
   placeF,field('region','Region (optional)','text',q.region),field('cardText','Text on the top card (optional)','text',q.cardText),
   h('div',{class:'f'},h('label',{text:'Time zone'}),tzSelS,h('p',{class:'note',style:'margin:2px 0 0',text:'Times for this stay are in this zone. Other saints see them in their own phone time.'})),
   h('div',{class:'two'},field('start','From date','date',q.start),field('end','To date','date',q.end)),
+  h('div',{class:'f'},h('span',{class:'lab',text:'Mandir shift (arriving here)'}),h('p',{class:'note',style:'margin:0',text:'Set the time of leaving the previous mandir and arriving here. It is added as a Mandir shift on the From date. Clear the leaving time to remove it.'})),
+  h('div',{class:'two'},field('shL','Leave previous mandir','time',(shEv()||{}).start||''),field('shA','Arrive here','time',(shEv()||{}).end||'')),
   h('div',{class:'f'},h('span',{class:'lab',text:'Daily programs'}),h('p',{class:'note',style:'margin:0',text:'Set a time to add that program on every day of this stay, morning and evening. Clear a start time to remove it from all days.'})),
   h('b',{text:'Morning (AM)'}),
   h('div',{class:'two'},field('aS','Aarti Niyam start','time',autoVal('pothiyatra','start')),field('aE','Aarti Niyam end','time',autoVal('pothiyatra','end'))),
