@@ -1075,7 +1075,7 @@ function openTour(t){
   var rr={};Object.keys(rSel).forEach(function(i){if(tk.indexOf(i)>-1&&rSel[i].length)rr[i]=ROLES.map(function(r){return r[0]}).filter(function(k){return rSel[i].indexOf(k)>-1}).concat(rSel[i].filter(function(k){return roleIx(k)<0}))});q.roles=rr;
   function firstOf(k){return Object.keys(rr).filter(function(i){return rr[i].indexOf(k)>-1})}
   q.mahant=firstOf('mahant')[0]||'';q.bhandari=firstOf('bhandari')[0]||'';q.kothari=firstOf('kothari')[0]||'';q.vaktas=firstOf('vakta');
-  state.tours=state.tours||[];var i=state.tours.findIndex(function(y){return y.id===q.id});if(i>-1)state.tours[i]=q;else state.tours.push(q);
+  state.tours=state.tours||[];var i=state.tours.findIndex(function(y){return y.id===q.id});if(i>-1)state.tours[i]=q;else{state.tours.push(q);if(scoped()&&ui.editTours.indexOf(q.id)<0){ui.editTours=ui.editTours.concat([q.id]);ui.canEdit=true}};
   syncStays();ui.dirty++;ui.tourOpen=q.id;modal.remove();render()}},
   h('div',{class:'row',style:'align-items:center;gap:10px'},isNew?null:delBtn,h('h2',{style:'margin:0',text:isNew?'Add tour':'Edit tour'})),
   field('name','Tour name','text',q.name),
@@ -1985,7 +1985,8 @@ function drawGate(){
 function save(){
  var pass=getPass();if(!pass||!ui.canEdit)return;
  ui.saving=true;ui.msg='';render();
- rpc('save_tour_state',{p_passcode:pass,p_data:state}).then(function(){try{localStorage.setItem('tourCache',JSON.stringify({pass:pass,res:{data:state,role:ui.role,edit_tours:ui.editTours}}));prefetchPics()}catch(x){}clearDraft();ui.base=JSON.stringify(state);ui.dirty=0;ui.saving=false;ui.waiting=false;ui.msg=ui.fromDraft?(lang==='gu'?'ઑફલાઇન ફેરફાર અપડેટ થયા':'Offline changes sent'):'Saved';ui.fromDraft=false;render()}).catch(function(err){
+ var oldIds=[];try{oldIds=(JSON.parse(ui.base||'{}').tours||[]).map(function(t){return t.id})}catch(x){}
+ rpc('save_tour_state',{p_passcode:pass,p_data:state}).then(function(){if(scoped()&&ui.canAddTours)(state.tours||[]).forEach(function(t){if(oldIds.indexOf(t.id)<0&&ui.editTours.indexOf(t.id)<0)ui.editTours=ui.editTours.concat([t.id])});try{localStorage.setItem('tourCache',JSON.stringify({pass:pass,res:{data:state,role:ui.role,edit_tours:ui.editTours}}));prefetchPics()}catch(x){}clearDraft();ui.base=JSON.stringify(state);ui.dirty=0;ui.saving=false;ui.waiting=false;ui.msg=ui.fromDraft?(lang==='gu'?'ઑફલાઇન ફેરફાર અપડેટ થયા':'Offline changes sent'):'Saved';ui.fromDraft=false;render()}).catch(function(err){
   ui.saving=false;ui.fromDraft=false;stashDraft();
   if(/bad_passcode/.test(JSON.stringify(err||{}))){ui.msg='Wrong password.'}
   else if(isNetErr(err)||navigator.onLine===false){ui.waiting=true;ui.msg=lang==='gu'?'ઇન્ટરનેટ નથી. ફેરફાર ફોનમાં સાચવ્યા છે, ઑનલાઇન થતાં અપડેટ થશે.':'No connection. Your changes are kept on this phone and will update when you are online.'}
