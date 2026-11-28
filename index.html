@@ -2055,10 +2055,10 @@ function shareEventImg(e,dStr,tStr,ids,hasCars,xc,used){
  else{L.push({h:(gu?'સંતો':'Saints')+' ('+dg(ids.length)+')',d:''});ids.forEach(function(i){L.push({s:(sName(i)||i)+(i===e.vakta?(gu?'  (વક્તા)':'  (Vakta)'):'')})});if(e.driver)kv(gu?'ડ્રાઇવર':'Driver',e.driver)}
  if(e.car)kv(gu?'ગાડી':'Car',e.car);
  var S=2,W=600,P=36,y=P,c=document.createElement('canvas'),x=c.getContext('2d'),F='system-ui,-apple-system,"Segoe UI","Noto Sans Gujarati",sans-serif';
- var H=P*2+60;L.forEach(function(r){H+=r.gap?14:r.h?44:34});
+ var H=P*2+104;L.forEach(function(r){H+=r.gap?14:r.h?44:34});
  c.width=W*S;c.height=H*S;x.scale(S,S);x.fillStyle='#ffffff';x.fillRect(0,0,W,H);
  x.fillStyle=getComputedStyle(document.querySelector('.ev.t-'+e.type)||document.body).getPropertyValue('--c').trim()||'#C2410C';x.fillRect(0,0,8,H);
- x.textBaseline='top';x.fillStyle='#111';x.font='700 28px '+F;x.fillText(title,P,y,W-P*2);y+=60;
+ x.textBaseline='top';var tc=x.fillStyle,topic=evTypeLabel(e);x.font='700 15px '+F;var tw=x.measureText(topic).width+28;x.globalAlpha=.14;x.fillRect(P,y,tw,30);x.globalAlpha=1;x.fillText(topic,P+14,y+7);y+=44;x.fillStyle='#111';x.font='700 28px '+F;x.fillText(title,P,y,W-P*2);y+=60;
  L.forEach(function(r){if(r.gap){y+=14;return}
   if(r.h){x.fillStyle='#111';x.font='700 19px '+F;x.fillText(r.h,P,y+12);if(r.d){x.fillStyle='#555';x.font='500 16px '+F;x.textAlign='right';x.fillText(r.d,W-P,y+14);x.textAlign='left'}x.fillStyle='#e5e5e5';x.fillRect(P,y+40,W-P*2,1);y+=44;return}
   if(r.s){x.fillStyle='#222';x.font='500 18px '+F;x.fillText('•  '+r.s,P+4,y+6,W-P*2);y+=34;return}
@@ -2087,7 +2087,8 @@ function showEventSaints(id){
  var top=[];if(dStr)top.push(irow(gu?'તારીખ':'Date',dStr));if(tStr)top.push(irow(gu?'સમય':'Time',tStr));if(e.yajman)top.push(irow(gu?'યજમાન':'Yajman',e.yajman));
  var info=[];if(e.driver&&!hasCars)info.push(h('div',{class:'srow'},h('span',{class:'faint',style:'min-width:56px',text:gu?'ડ્રાઇવર':'Driver'}),h('span',{style:'font-weight:600',text:e.driver})));if(e.car)info.push(h('div',{class:'srow'},h('span',{class:'faint',style:'min-width:56px',text:gu?'ગાડી':'Car'}),h('span',{style:'font-weight:600',text:e.car})));
  var bg=STK[e.type]?h('img',{src:STK[e.type],alt:'','aria-hidden':'true',style:'position:absolute;right:-6px;bottom:-6px;width:62%;max-width:260px;height:auto;opacity:.22;pointer-events:none;z-index:0;-webkit-mask-image:linear-gradient(to right,transparent,#000 55%);mask-image:linear-gradient(to right,transparent,#000 55%)'}):null;
- var form=h('div',{class:'form',style:'position:relative;overflow:hidden'},bg,
+ var form=h('div',{class:'form t-'+e.type,style:'position:relative;overflow:hidden'+((e.type==='other'&&/^#[0-9a-fA-F]{6}$/.test(e.color||''))?';--c:'+e.color:'')},bg,
+  h('div',{style:'position:relative;z-index:1'},h('span',{style:'display:inline-block;padding:3px 12px;border-radius:12px;font-size:13px;font-weight:700;letter-spacing:.02em;background:color-mix(in srgb,var(--c,#C2410C) 15%,transparent);color:var(--c,#C2410C)',text:evTypeLabel(e)})),
   h('div',{class:'row',style:'justify-content:space-between;align-items:center;flex-wrap:nowrap;position:relative;z-index:1'},h('h2',{style:'margin:0',text:evTitle(e)||evTypeLabel(e)}),h('div',{style:'display:flex;gap:6px;flex-shrink:0'},h('button',{class:'btn sm',type:'button','aria-label':gu?'શેર કરો':'Share',title:gu?'શેર કરો':'Share',onclick:function(){shareEventImg(e,dStr,tStr,ids,hasCars,xc,used)}},shareIco()),h('button',{class:'btn sm',type:'button','aria-label':'Close',onclick:function(){modal.remove()}},'×'))),
   h('p',{class:'note',style:'margin:0;position:relative;z-index:1',text:(gu?'આ કાર્યક્રમમાં સંતો':'Saints in this event')+' ('+dg(ids.length)+')'}),
   top.length?h('div',{style:'display:flex;flex-direction:column;gap:6px;position:relative;z-index:1;border-bottom:1px solid var(--line);padding-bottom:10px'},top):null,
