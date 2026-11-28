@@ -747,7 +747,7 @@ function fxEls(t){var f=FX[t],o=[],i;
 function flightLine(e,isNow){var p=isNow?+nowPct(e):0;if(!e.from&&!e.to)return null;
  return h('div',{class:'fline'},h('span',{class:'fp',text:trPlace(e.from)||'—'}),h('div',{class:'ftrack'},h('i',{class:'fdone',style:'width:'+p+'%'}),h('span',{class:'fplane'+(isNow?' on':''),style:'left:'+p+'%',text:'✈️'})),h('span',{class:'fp',text:trPlace(e.to)||'—'}))}
 function nowPct(e){var n=new Date(),nm=n.getHours()*60+n.getMinutes()+n.getSeconds()/60,q1=dt(e),st=toMin(q1.start),en=q1.end?toMin(q1.end):st+90;if(st!=null&&en<=st&&VC&&conv(e))en+=1440;if(st==null||en<=st)return 0;return Math.max(0,Math.min(100,(nm-st)/(en-st)*100)).toFixed(1)}
-var STK={pothiyatra:'aarti-sticker.webp',katha:'katha-sticker.webp',vastu:'vastu-sticker.webp',padramani:'padramani-sticker.webp',pravachan:'pravachan-sticker.webp'},SHK={vastu:'vastu-share.webp',outing:'outing-sticker.webp',car:'car-sticker.webp',sabha:'sabha-sticker.webp',rasotsav:'rasotsav-sticker.webp'};
+var STK={pothiyatra:'aarti-sticker.webp',katha:'katha-sticker.webp',vastu:'vastu-sticker.webp',padramani:'padramani-sticker.webp',pravachan:'pravachan-sticker.webp'},SHK={vastu:'vastu-share.webp',lunch:'vastu-share.webp',outing:'outing-sticker.webp',car:'car-sticker.webp',sabha:'sabha-sticker.webp',rasotsav:'rasotsav-sticker.webp'};
 function showTitle(e){var t=evTitle(e).trim();if(!t)return false;var n=function(x){return String(x).toLowerCase().replace(/[^a-z0-9઀-૿]/g,'')},k=n(t);
  return k!==n(evTypeLabel(e))&&k!==n(typeLabel(e.type))&&k!==n(TYPES[e.type]||'')&&k!==n(e.type)&&k!==n(TG[e.type]||'')}
 function evCard(e,isNow,isNext){
