@@ -109,11 +109,6 @@ a.mappin:active{transform:scale(.92)}
 a.callpin{border:1px solid rgba(30,142,62,.4)!important}
 a.callpin:active,a.wapin:active{transform:scale(.92)}
 a.wapin{border:1px solid rgba(37,211,102,.5)!important}
-.ksticker.k-outing,.ksticker.k-outing.now,.ksticker.k-sabha,.ksticker.k-sabha.now,.ksticker.k-rasotsav,.ksticker.k-rasotsav.now{left:0!important;right:0!important;width:100%!important;bottom:0!important;transform:none!important;animation:none!important;border-radius:0;filter:brightness(1.08) saturate(.9);object-fit:contain!important;object-position:right center;height:calc(100% - 30px)!important;-webkit-mask-image:linear-gradient(90deg,transparent 0,#000 30%)!important;mask-image:linear-gradient(90deg,transparent 0,#000 30%)!important;top:30px!important;opacity:.62!important}
-.ksticker.k-outing.now,.ksticker.k-sabha.now,.ksticker.k-rasotsav.now{opacity:.72!important}
-.ksticker.k-car,.ksticker.k-car.now{left:92px!important;right:0!important;top:0!important;bottom:0!important;width:calc(100% - 92px)!important;height:100%!important;object-fit:cover!important;object-position:center 35%;transform:none!important;animation:none!important;border-radius:inherit;filter:saturate(.9)!important;opacity:.2!important;-webkit-mask-image:none!important;mask-image:none!important}
-.ksticker.k-car.now{opacity:.26!important}
-@media (max-width:420px){.ksticker.k-car,.ksticker.k-car.now{left:76px!important;width:calc(100% - 76px)!important}}
 </style></head><body>
 <title>કાર્યક્રમ</title><meta name="claude:viewport-fit-sides" content="cover"><style id="css">
 /* Layout: one narrow column, day-at-a-time program with a colour-block time rail on each event. */
@@ -752,7 +747,7 @@ function fxEls(t){var f=FX[t],o=[],i;
 function flightLine(e,isNow){var p=isNow?+nowPct(e):0;if(!e.from&&!e.to)return null;
  return h('div',{class:'fline'},h('span',{class:'fp',text:trPlace(e.from)||'—'}),h('div',{class:'ftrack'},h('i',{class:'fdone',style:'width:'+p+'%'}),h('span',{class:'fplane'+(isNow?' on':''),style:'left:'+p+'%',text:'✈️'})),h('span',{class:'fp',text:trPlace(e.to)||'—'}))}
 function nowPct(e){var n=new Date(),nm=n.getHours()*60+n.getMinutes()+n.getSeconds()/60,q1=dt(e),st=toMin(q1.start),en=q1.end?toMin(q1.end):st+90;if(st!=null&&en<=st&&VC&&conv(e))en+=1440;if(st==null||en<=st)return 0;return Math.max(0,Math.min(100,(nm-st)/(en-st)*100)).toFixed(1)}
-var STK={pothiyatra:'aarti-sticker.webp',katha:'katha-sticker.webp',vastu:'vastu-sticker.webp',padramani:'padramani-sticker.webp',pravachan:'pravachan-sticker.webp',outing:'outing-sticker.webp',car:'car-sticker.webp',sabha:'sabha-sticker.webp',rasotsav:'rasotsav-sticker.webp'};
+var STK={pothiyatra:'aarti-sticker.webp',katha:'katha-sticker.webp',vastu:'vastu-sticker.webp',padramani:'padramani-sticker.webp',pravachan:'pravachan-sticker.webp'},SHK={vastu:'vastu-share.webp',outing:'outing-sticker.webp',car:'car-sticker.webp',sabha:'sabha-sticker.webp',rasotsav:'rasotsav-sticker.webp'};
 function showTitle(e){var t=evTitle(e).trim();if(!t)return false;var n=function(x){return String(x).toLowerCase().replace(/[^a-z0-9઀-૿]/g,'')},k=n(t);
  return k!==n(evTypeLabel(e))&&k!==n(typeLabel(e.type))&&k!==n(TYPES[e.type]||'')&&k!==n(e.type)&&k!==n(TG[e.type]||'')}
 function evCard(e,isNow,isNext){
@@ -2053,7 +2048,7 @@ function shareIco(){var sp=h('span',{style:'display:inline-flex'});sp.innerHTML=
 function picData(id){if(!id)return Promise.resolve(null);if(picCache[id])return Promise.resolve(picCache[id]);return picGet(id).then(function(d){if(d){picCache[id]=d;return d}return picNet(id)}).catch(function(){return null})}
 function loadImg(src){return new Promise(function(r){if(!src)return r(null);var im=new Image();im.onload=function(){r(im)};im.onerror=function(){r(null)};im.src=src})}
 function preloadShare(e,ids){var sa={};ids.forEach(function(i){var s0=state.saints.find(function(x){return x.id===i});if(s0&&s0.photo)sa[i]=s0.photo});
- var ph=(e.photos||[])[0];return Promise.all([picData(ph&&ph.id).then(loadImg),loadImg(STK[e.type]||null)].concat(Object.keys(sa).map(function(i){return picData(sa[i]).then(loadImg).then(function(im){return [i,im]})}))).then(function(r){var m={};r.slice(2).forEach(function(q){if(q[1])m[q[0]]=q[1]});return {photo:r[0],stk:r[1],av:m}})}
+ var ph=(e.photos||[])[0];return Promise.all([picData(ph&&ph.id).then(loadImg),loadImg(SHK[e.type]||STK[e.type]||null)].concat(Object.keys(sa).map(function(i){return picData(sa[i]).then(loadImg).then(function(im){return [i,im]})}))).then(function(r){var m={};r.slice(2).forEach(function(q){if(q[1])m[q[0]]=q[1]});return {photo:r[0],stk:r[1],av:m}})}
 function shareEventImg(e,dStr,tStr,ids,hasCars,xc,used,pre){
  var gu=lang==='gu',title=evTitle(e)||evTypeLabel(e),L=[];
  function kv(k,v){if(v)L.push({k:k,v:v})}
@@ -2107,7 +2102,7 @@ function showEventSaints(id){
  var top=[];if(dStr)top.push(irow(gu?'તારીખ':'Date',dStr));if(tStr)top.push(irow(gu?'સમય':'Time',tStr));if(e.yajman)top.push(irow(gu?'યજમાન':'Yajman',e.yajman));
  var pre=preloadShare(e,ids);
  var info=[];if(e.driver&&!hasCars)info.push(h('div',{class:'srow'},h('span',{class:'faint',style:'min-width:56px',text:gu?'ડ્રાઇવર':'Driver'}),h('span',{style:'font-weight:600',text:e.driver})));if(e.car)info.push(h('div',{class:'srow'},h('span',{class:'faint',style:'min-width:56px',text:gu?'ગાડી':'Car'}),h('span',{style:'font-weight:600',text:e.car})));
- var bg=STK[e.type]&&e.type!=='car'?h('img',{src:STK[e.type],alt:'','aria-hidden':'true',style:'position:absolute;right:-6px;bottom:-6px;width:62%;max-width:260px;height:auto;opacity:.22;pointer-events:none;z-index:0;-webkit-mask-image:linear-gradient(to right,transparent,#000 55%);mask-image:linear-gradient(to right,transparent,#000 55%)'}):null;
+ var bg=STK[e.type]?h('img',{src:STK[e.type],alt:'','aria-hidden':'true',style:'position:absolute;right:-6px;bottom:-6px;width:62%;max-width:260px;height:auto;opacity:.22;pointer-events:none;z-index:0;-webkit-mask-image:linear-gradient(to right,transparent,#000 55%);mask-image:linear-gradient(to right,transparent,#000 55%)'}):null;
  var form=h('div',{class:'form t-'+e.type,style:'position:relative;overflow:hidden'+((e.type==='other'&&/^#[0-9a-fA-F]{6}$/.test(e.color||''))?';--c:'+e.color:'')},bg,
   h('div',{class:'row',style:'justify-content:space-between;align-items:center;flex-wrap:nowrap;position:relative;z-index:1'},h('h2',{style:'margin:0',text:evTitle(e)||evTypeLabel(e)}),h('div',{style:'display:flex;gap:6px;flex-shrink:0'},h('button',{class:'btn sm',type:'button','aria-label':gu?'શેર કરો':'Share',title:gu?'શેર કરો':'Share',onclick:function(){shareEventImg(e,dStr,tStr,ids,hasCars,xc,used,pre)}},shareIco()),h('button',{class:'btn sm',type:'button','aria-label':'Close',onclick:function(){modal.remove()}},'×'))),
   h('p',{class:'note',style:'margin:0;position:relative;z-index:1',text:(gu?'આ કાર્યક્રમમાં સંતો':'Saints in this event')+' ('+dg(ids.length)+')'}),
